@@ -1,0 +1,1898 @@
+/* ==========================================
+   WARDEAL v0.3.3
+   Compact Mobile UI
+   Player Progress System
+========================================== */
+
+*{
+    box-sizing:border-box;
+}
+
+
+html,
+body{
+    margin:0;
+    padding:0;
+    overflow-x:hidden;
+}
+
+
+body{
+
+    background:#0b1220;
+
+    color:#fff;
+
+    font-family:Arial,sans-serif;
+
+}
+
+
+
+#gameContainer{
+
+    width:100%;
+
+    max-width:900px;
+
+    min-height:100vh;
+
+    margin:auto;
+
+}
+
+
+
+
+/* ==========================================
+   מסכים - מניעת הבהוב טעינה
+========================================== */
+
+#startScreen,
+#gameScreen {
+    display: none;
+}
+
+
+#startScreen{
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    min-height:100vh;
+
+    width:100%;
+
+    max-width:420px;
+
+    margin:0 auto;
+
+    padding:24px 18px;
+
+    text-align:center;
+
+}
+
+
+
+
+
+/* ==========================================
+   לוגו
+========================================== */
+
+
+.logoArea,
+#gameLogo{
+
+    text-align:center;
+
+    padding:18px 10px;
+
+}
+
+
+
+.logoArea h1,
+#gameLogo h1{
+
+    margin:0;
+
+    font-size:34px;
+
+    background:linear-gradient(135deg,#60a5fa,#c084fc);
+
+    -webkit-background-clip:text;
+
+    background-clip:text;
+
+    color:transparent;
+
+    letter-spacing:1px;
+
+}
+
+
+
+.logoArea p,
+#gameLogo span{
+
+    color:#94a3b8;
+
+    font-size:14px;
+
+}
+
+
+
+
+
+/* ==========================================
+   שדה שם שחקן
+========================================== */
+
+
+#playerName{
+
+    display:block;
+
+    width:90%;
+
+    max-width:300px;
+
+    margin:14px auto 8px;
+
+    padding:14px 16px;
+
+    border-radius:14px;
+
+    border:2px solid #334155;
+
+    background:#111827;
+
+    color:#fff;
+
+    font-size:16px;
+
+    text-align:center;
+
+}
+
+
+
+#playerName::placeholder{
+
+    color:#64748b;
+
+}
+
+
+
+#playerName:focus{
+
+    outline:none;
+
+    border-color:#3b82f6;
+
+    box-shadow:0 0 0 3px rgba(59,130,246,.25);
+
+}
+
+
+
+
+
+/* ==========================================
+   בחירת צד
+========================================== */
+
+
+#startScreen h3{
+
+    margin:18px 0 6px;
+
+    font-size:15px;
+
+    color:#cbd5e1;
+
+    letter-spacing:.5px;
+
+}
+
+
+
+.sideButtons{
+
+    display:flex;
+
+    gap:12px;
+
+    padding:6px 4px 10px;
+
+    width:100%;
+
+}
+
+
+
+.sideButton{
+
+    flex:1;
+
+    min-height:112px;
+
+    border-radius:18px;
+
+    border:2px solid #334155;
+
+    background:#111827;
+
+    color:#fff;
+
+    font-size:22px;
+
+    box-shadow:0 4px 14px rgba(0,0,0,.35);
+
+    transition:transform .15s ease,border-color .15s ease;
+
+}
+
+
+
+.sideButton:active{
+
+    transform:scale(.96);
+
+}
+
+
+
+.sideButton small{
+
+    display:block;
+
+    margin-top:8px;
+
+    font-size:12px;
+
+    color:#cbd5e1;
+
+}
+
+
+
+#policeChoice{
+
+    background:linear-gradient(
+        135deg,
+        #1e3a8a,
+        #0f172a
+    );
+
+    border-color:#3b82f6;
+
+}
+
+
+
+#criminalChoice{
+
+    background:linear-gradient(
+        135deg,
+        #581c87,
+        #0f172a
+    );
+
+    border-color:#a855f7;
+
+}
+
+
+
+.sideButton.active{
+
+    border-color:#facc15;
+
+    box-shadow:0 0 0 3px rgba(250,204,21,.3),0 4px 14px rgba(0,0,0,.35);
+
+}
+
+
+
+.sideButton:disabled{
+
+    opacity:.45;
+
+    cursor:not-allowed;
+
+}
+
+
+
+#playerName:disabled{
+
+    opacity:.6;
+
+    cursor:not-allowed;
+
+}
+
+
+
+
+
+/* ==========================================
+   כפתור כניסה
+========================================== */
+
+
+.mainButton{
+
+    display:block;
+
+    width:90%;
+
+    max-width:300px;
+
+    margin:18px auto 6px;
+
+    padding:15px;
+
+    border:0;
+
+    border-radius:16px;
+
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
+
+    color:#fff;
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    box-shadow:0 6px 18px rgba(37,99,235,.4);
+
+    transition:transform .15s ease;
+
+}
+
+
+
+.mainButton:active{
+
+    transform:scale(.97);
+
+}
+
+
+
+.startScreenMessage{
+
+    min-height:18px;
+
+    margin:8px 0 0;
+
+    color:#f87171;
+
+    font-size:13px;
+
+    text-align:center;
+
+}
+
+
+
+.quickActionsRow{
+
+    display:flex;
+
+    gap:8px;
+
+    margin-top:14px;
+
+}
+
+
+
+.quickActionBtn{
+
+    flex:1;
+
+    max-width:none;
+
+    width:auto;
+
+}
+
+
+
+.mainButton:disabled{
+
+    opacity:.5;
+
+    cursor:not-allowed;
+
+    box-shadow:none;
+
+}
+
+
+
+.convertInput{
+
+    display:block;
+
+    width:100%;
+
+    margin:8px 0;
+
+    padding:10px;
+
+    border-radius:10px;
+
+    border:2px solid #334155;
+
+    background:#0f172a;
+
+    color:#fff;
+
+    font-size:15px;
+
+    text-align:center;
+
+}
+
+
+
+.convertInput:focus{
+
+    outline:none;
+
+    border-color:#3b82f6;
+
+}
+
+
+
+
+
+/* ==========================================
+   הודעות
+========================================== */
+
+
+#welcomeBox{
+
+    margin:8px;
+
+    padding:10px;
+
+    text-align:center;
+
+    background:#111827;
+
+    border:1px solid #334155;
+
+    border-radius:12px;
+
+}
+
+
+
+.showMessage{
+
+    animation:messageShow .3s ease;
+
+}
+
+
+
+@keyframes messageShow{
+
+    from{
+
+        opacity:0;
+
+    }
+
+
+    to{
+
+        opacity:1;
+
+    }
+
+}
+/* ==========================================
+   סרגל משאבים
+========================================== */
+
+
+#topBar{
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:6px;
+
+    margin:8px;
+
+    padding:8px;
+
+    background:#111827;
+
+    border:1px solid #334155;
+
+    border-radius:14px;
+
+}
+
+
+
+#topBar div{
+
+    text-align:center;
+
+    padding:6px 2px;
+
+    background:#1e293b;
+
+    border-radius:10px;
+
+    font-size:14px;
+
+}
+
+
+
+#topBar span{
+
+    display:block;
+
+    margin-top:3px;
+
+    font-weight:bold;
+
+}
+
+
+
+
+
+/* ==========================================
+   כרטיס שחקן
+========================================== */
+
+
+#playerBox{
+
+    margin:8px;
+
+    padding:10px;
+
+    background:#111827;
+
+    border:1px solid #334155;
+
+    border-radius:16px;
+
+}
+
+
+
+
+
+.playerIdentity{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+
+
+
+
+.sideBadge{
+
+    width:48px;
+
+    height:48px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:#1e293b;
+
+    font-size:24px;
+
+}
+
+
+
+
+
+.playerInfo{
+
+    flex:1;
+
+}
+
+
+
+
+
+.playerInfo h2{
+
+    margin:0;
+
+    font-size:18px;
+
+}
+
+
+
+
+
+.playerInfo p{
+
+    margin:3px 0 0;
+
+    color:#cbd5e1;
+
+    font-size:13px;
+
+}
+
+
+
+
+
+
+
+
+
+/* ==========================================
+   סטטוסים עם פסי התקדמות
+========================================== */
+
+
+.miniStats{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:7px;
+
+    margin-top:10px;
+
+}
+
+
+
+
+
+.statBox{
+
+    background:#0f172a;
+
+    border:1px solid #334155;
+
+    border-radius:10px;
+
+    padding:7px 5px;
+
+    text-align:center;
+
+}
+
+
+
+
+
+.statTitle{
+
+    font-size:12px;
+
+    color:#cbd5e1;
+
+}
+
+
+
+
+
+.statBox span{
+
+    display:block;
+
+    margin-top:3px;
+
+    font-size:17px;
+
+    font-weight:bold;
+
+}
+
+
+
+
+
+/* ==========================================
+   פס התקדמות
+========================================== */
+
+
+.progress{
+
+    width:100%;
+
+    height:6px;
+
+    margin-top:6px;
+
+    background:#1e293b;
+
+    border-radius:10px;
+
+    overflow:hidden;
+
+}
+
+
+
+
+
+.progressFill{
+
+    height:100%;
+
+    width:0%;
+
+    border-radius:10px;
+
+    transition:width .4s ease;
+
+}
+
+
+
+
+
+.healthFill{
+
+    background:#ef4444;
+
+}
+
+
+
+
+
+.energyFill{
+
+    background:#22c55e;
+
+}
+
+
+
+
+
+.powerFill{
+
+    background:#f97316;
+
+}
+
+
+
+
+
+.unitsFill{
+
+    background:#3b82f6;
+
+}
+
+
+
+
+
+.xpFill{
+
+    background:#eab308;
+
+}
+
+
+
+
+
+.levelFill{
+
+    background:#a855f7;
+
+}
+
+
+
+
+
+.playerId{
+
+    margin-top:8px;
+
+    padding:6px;
+
+    text-align:center;
+
+    background:#0f172a;
+
+    border-radius:8px;
+
+    color:#94a3b8;
+
+    font-size:11px;
+
+}
+/* ==========================================
+   תפריט ראשי
+========================================== */
+
+
+#mainMenu{
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:5px;
+
+    padding:8px;
+
+    position:sticky;
+
+    top:0;
+
+    z-index:10;
+
+    background:#0b1220;
+
+}
+
+
+
+
+
+.menuButton{
+
+    border:0;
+
+    border-radius:12px;
+
+    background:#111827;
+
+    color:#fff;
+
+    padding:8px 3px;
+
+    font-size:17px;
+
+}
+
+
+
+
+
+.menuButton.active{
+
+    background:#2563eb;
+
+    border:1px solid #60a5fa;
+
+}
+
+
+
+
+
+/* ==========================================
+   אזור תוכן
+========================================== */
+
+
+#gameContent{
+
+    margin:8px;
+
+    padding:10px;
+
+    min-height:200px;
+
+    background:#0f172a;
+
+    border:1px solid #334155;
+
+    border-radius:16px;
+
+}
+
+
+
+
+
+.contentCard{
+
+    background:#111827;
+
+    border:1px solid #334155;
+
+    border-radius:14px;
+
+    padding:12px;
+
+}
+
+
+
+
+
+.contentCard h3{
+
+    margin:0 0 10px;
+
+    text-align:center;
+
+    font-size:20px;
+
+}
+
+
+
+
+
+/* ==========================================
+   מערכות משחק
+========================================== */
+
+
+.optionGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:8px;
+
+}
+
+
+
+
+
+.optionCard{
+
+    min-height:80px;
+
+    padding:10px;
+
+    border-radius:12px;
+
+    border:1px solid #334155;
+
+    background:#1e293b;
+
+    color:#fff;
+
+    font-size:15px;
+
+}
+
+
+
+
+
+.optionCard:active{
+
+    transform:scale(.97);
+
+}
+
+
+
+
+
+/* ==========================================
+   אנימציית רמה
+========================================== */
+
+
+.levelUp{
+
+    animation:levelAnimation 1s ease;
+
+}
+
+
+
+
+
+@keyframes levelAnimation{
+
+    0%{
+
+        transform:scale(1);
+
+    }
+
+
+    50%{
+
+        transform:scale(1.3);
+
+    }
+
+
+    100%{
+
+        transform:scale(1);
+
+    }
+
+}
+
+
+
+
+
+/* ==========================================
+   מגע
+========================================== */
+
+
+button{
+
+    -webkit-tap-highlight-color:transparent;
+
+    user-select:none;
+
+    touch-action:manipulation;
+
+}
+
+
+
+
+
+/* ==========================================
+   מובייל
+========================================== */
+
+
+/* ==========================================
+   מידע קרב (combat.js)
+========================================== */
+
+
+.battleInfo{
+
+    background:#1e293b;
+
+    border:1px solid #334155;
+
+    border-radius:12px;
+
+    padding:10px 12px;
+
+    margin-top:10px;
+
+    margin-bottom:4px;
+
+    font-size:14px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
+
+
+
+.battleInfoSub{
+
+    display:block;
+
+    font-size:11px;
+
+    color:#94a3b8;
+
+    margin-top:2px;
+
+}
+
+
+
+
+
+/* ==========================================
+   כרטיסי בעלות + שדרוג (נכסים ועסקים)
+========================================== */
+
+
+.ownedCard{
+
+    background:#1e293b;
+
+    border:1px solid #334155;
+
+    border-radius:12px;
+
+    padding:10px 12px;
+
+    margin-bottom:8px;
+
+}
+
+
+
+.bossGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:8px;
+
+}
+
+
+
+.bossGrid .ownedCard{
+
+    margin-bottom:0;
+
+}
+
+
+
+.ownedCardName{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    font-size:14px;
+
+    font-weight:bold;
+
+}
+
+
+
+.ownedCardLevel{
+
+    font-size:12px;
+
+    font-weight:normal;
+
+    color:#a855f7;
+
+    background:#0f172a;
+
+    border-radius:8px;
+
+    padding:2px 8px;
+
+}
+
+
+
+.ownedCardRow{
+
+    margin-top:4px;
+
+    font-size:13px;
+
+    color:#cbd5e1;
+
+}
+
+
+
+.upgradeBtn{
+
+    width:100%;
+
+    margin-top:8px;
+
+    padding:8px;
+
+    border:0;
+
+    border-radius:10px;
+
+    background:#7c3aed;
+
+    color:#fff;
+
+    font-size:13px;
+
+}
+
+
+
+.upgradeBtn:disabled{
+
+    opacity:.4;
+
+}
+
+
+
+.upgradeBtn:active{
+
+    transform:scale(.97);
+
+}
+
+
+
+.blackUpgradeBtn{
+
+    background:#1a1a1a;
+
+    border:1px solid #444;
+
+    margin-top:6px;
+
+}
+
+
+
+.specialUpgradeBadge{
+
+    margin-top:8px;
+
+    padding:8px;
+
+    text-align:center;
+
+    background:#1a1a1a;
+
+    border:1px solid #444;
+
+    border-radius:10px;
+
+    font-size:13px;
+
+    color:#cbd5e1;
+
+}
+
+
+
+
+
+/* ==========================================
+   מסך עיר - לוח מחוונים וחדשות (city.js)
+========================================== */
+
+
+.cityStatsGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:8px;
+
+    margin-top:10px;
+
+}
+
+
+
+.cityStatBox{
+
+    background:#1e293b;
+
+    border:1px solid #334155;
+
+    border-radius:12px;
+
+    padding:10px 6px;
+
+    text-align:center;
+
+    font-size:13px;
+
+    color:#cbd5e1;
+
+}
+
+
+
+.cityStatBox span{
+
+    display:block;
+
+    margin-top:4px;
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    color:#fff;
+
+}
+
+
+
+.cityNoNews{
+
+    color:#94a3b8;
+
+    font-size:13px;
+
+    text-align:center;
+
+    padding:10px 0;
+
+}
+
+
+
+.cityNewsList{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
+
+
+
+.cityNewsItem{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:8px;
+
+    background:#1e293b;
+
+    border:1px solid #334155;
+
+    border-radius:10px;
+
+    padding:8px 10px;
+
+    font-size:13px;
+
+}
+
+
+
+.cityNewsAmount{
+
+    font-weight:bold;
+
+    white-space:nowrap;
+
+}
+
+
+
+.cityNewsPositive .cityNewsAmount{
+
+    color:#22c55e;
+
+}
+
+
+
+.cityNewsNegative .cityNewsAmount{
+
+    color:#ef4444;
+
+}
+
+
+
+
+
+/* ==========================================
+   עבודות פעילות (jobs.js)
+========================================== */
+
+
+.activeJobCard{
+
+    background:#1e293b;
+
+    border:1px solid #334155;
+
+    border-radius:10px;
+
+    padding:8px 10px;
+
+    margin-bottom:8px;
+
+}
+
+
+
+.activeJobName{
+
+    font-size:14px;
+
+    margin-bottom:4px;
+
+}
+
+
+
+.jobFill{
+
+    background:#38bdf8;
+
+}
+
+
+
+.jobTimeLeft{
+
+    margin-top:4px;
+
+    font-size:12px;
+
+    color:#94a3b8;
+
+    text-align:left;
+
+}
+
+
+
+.optionCard:disabled{
+
+    opacity:.45;
+
+}
+
+
+
+.optionCard h4,
+h4{
+
+    margin:10px 0 6px;
+
+    font-size:15px;
+
+    color:#cbd5e1;
+
+}
+
+
+
+
+
+/* ==========================================
+   כפתורי הגדרות (יציאה / משחק חדש)
+========================================== */
+
+
+.gameControls{
+
+    display:flex;
+
+    gap:8px;
+
+    justify-content:center;
+
+    padding:0 8px 8px;
+
+}
+
+
+
+.smallButton{
+
+    flex:1;
+
+    max-width:180px;
+
+    padding:8px;
+
+    border:1px solid #334155;
+
+    border-radius:10px;
+
+    background:#1e293b;
+
+    color:#fff;
+
+    font-size:13px;
+
+}
+
+
+
+.smallButton:active{
+
+    transform:scale(.97);
+
+}
+
+
+
+
+
+@media(max-width:600px){
+
+
+    #mainMenu{
+
+        grid-template-columns:repeat(3,1fr);
+
+    }
+
+
+
+    .miniStats{
+
+        grid-template-columns:repeat(3,1fr);
+
+    }
+
+
+
+    .optionGrid{
+
+        grid-template-columns:repeat(2,1fr);
+
+    }
+
+
+
+    .sideButton{
+
+        min-height:90px;
+
+        font-size:18px;
+
+    }
+
+
+}
+
+
+
+
+
+@media(max-width:400px){
+
+
+    .logoArea h1,
+    #gameLogo h1{
+
+        font-size:24px;
+
+    }
+
+
+
+    #topBar{
+
+        margin:5px;
+
+        gap:4px;
+
+    }
+
+
+
+    #topBar div{
+
+        font-size:12px;
+
+    }
+
+
+
+    #playerBox{
+
+        padding:8px;
+
+    }
+
+
+
+    .miniStats{
+
+        gap:5px;
+
+    }
+
+
+
+    .statBox{
+
+        padding:5px 3px;
+
+    }
+
+
+
+    .statTitle{
+
+        font-size:11px;
+
+    }
+
+
+
+    .statBox span{
+
+        font-size:15px;
+
+    }
+
+
+
+    .menuButton{
+
+        font-size:15px;
+
+        padding:6px 2px;
+
+    }
+
+
+
+    .optionCard{
+
+        font-size:13px;
+
+        min-height:75px;
+
+    }
+
+
+}
+
+
+/* ==========================================
+   כפתור עזרה
+========================================== */
+
+
+.helpButton{
+
+    position:fixed;
+
+    top:10px;
+
+    left:10px;
+
+    z-index:999;
+
+    width:36px;
+
+    height:36px;
+
+    border-radius:50%;
+
+    border:1px solid #334155;
+
+    background:#111827;
+
+    color:#fff;
+
+    font-size:16px;
+
+    box-shadow:0 2px 8px rgba(0,0,0,.4);
+
+}
+
+
+
+.helpButton:active{
+
+    transform:scale(.95);
+
+}
+
+
+
+
+
+/* ==========================================
+   חלונות מודל (עזרה + ברוך שובך)
+========================================== */
+
+
+.modalOverlay{
+
+    display:none;
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.75);
+
+    z-index:1000;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:16px;
+
+}
+
+
+
+.modalOverlay.modalOpen{
+
+    display:flex;
+
+}
+
+
+
+.modalBox{
+
+    position:relative;
+
+    width:100%;
+
+    max-width:420px;
+
+    max-height:82vh;
+
+    overflow-y:auto;
+
+    background:#111827;
+
+    border:1px solid #334155;
+
+    border-radius:18px;
+
+    padding:18px;
+
+}
+
+
+
+.modalBox h3{
+
+    margin:0 0 12px;
+
+    text-align:center;
+
+    font-size:19px;
+
+}
+
+
+
+.modalCloseBtn{
+
+    position:absolute;
+
+    top:10px;
+
+    left:10px;
+
+    width:30px;
+
+    height:30px;
+
+    border-radius:50%;
+
+    border:1px solid #334155;
+
+    background:#1e293b;
+
+    color:#fff;
+
+    font-size:14px;
+
+}
+
+
+
+.helpItem{
+
+    margin-bottom:12px;
+
+    padding:10px 12px;
+
+    background:#1e293b;
+
+    border-radius:12px;
+
+}
+
+
+
+.helpItem b{
+
+    display:block;
+
+    margin-bottom:3px;
+
+    font-size:14px;
+
+}
+
+
+
+.helpItem span{
+
+    font-size:13px;
+
+    color:#cbd5e1;
+
+}
+
+
+
+.welcomeBackRow{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:8px 10px;
+
+    background:#1e293b;
+
+    border-radius:10px;
+
+    margin-bottom:8px;
+
+    font-size:14px;
+
+}
+
+
+
+.welcomeBackJobsList{
+
+    margin:8px 0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
