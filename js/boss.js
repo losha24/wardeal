@@ -9,12 +9,10 @@
    כל בוס נופל עם פריט ציוד בלעדי משלו,
    שלא ניתן לרכוש בשום מקום אחר.
 ========================================== */
-
-
 const BOSSES = [
-
     {
         id:1,
+        minLevel:1,
         name:"ראש כנופיה",
         desc:"שולט ברחובות עם קבוצת אכיפה קטנה",
         icon:"🔪",
@@ -31,10 +29,9 @@ const BOSSES = [
         lootChance:0.15,
         loot:{ category:"weapon", name:"🔫 אקדח הכנופיה", statKey:"power", statValue:180 }
     },
-
-
     {
         id:2,
+        minLevel:3,
         name:"בוס סמים אזורי",
         desc:"מנהל רשת הפצה על פני כמה שכונות",
         icon:"💊",
@@ -51,10 +48,9 @@ const BOSSES = [
         lootChance:0.15,
         loot:{ category:"armor", name:"🛡️ שריון הבוס האזורי", statKey:"defense", statValue:170 }
     },
-
-
     {
         id:3,
+        minLevel:6,
         name:"מלך ההברחות",
         desc:"מפעיל צי שלם של רכבים חשאיים",
         icon:"🚢",
@@ -71,10 +67,9 @@ const BOSSES = [
         lootChance:0.12,
         loot:{ category:"vehicle", name:"🚗 רכב מלך ההברחות", statKey:"speed", statValue:150 }
     },
-
-
     {
         id:4,
+        minLevel:10,
         name:"ראש המאפיה",
         desc:"עומד בראש ארגון פשע ותיק ומסועף",
         icon:"🎩",
@@ -91,10 +86,9 @@ const BOSSES = [
         lootChance:0.1,
         loot:{ category:"weapon", name:"🔫 נשק ראש המאפיה", statKey:"power", statValue:230 }
     },
-
-
     {
         id:5,
+        minLevel:15,
         name:"אדון הפשע העליון",
         desc:"האויב המסוכן ביותר בעיר",
         icon:"👑",
@@ -111,10 +105,9 @@ const BOSSES = [
         lootChance:0.08,
         loot:{ category:"armor", name:"🛡️ שריון אדון הפשע", statKey:"defense", statValue:220 }
     },
-
-
     {
         id:6,
+        minLevel:20,
         name:"הקרטל הבינלאומי",
         desc:"רשת פשע חוצת יבשות עם משאבים בלתי מוגבלים",
         icon:"🌍",
@@ -131,10 +124,9 @@ const BOSSES = [
         lootChance:0.08,
         loot:{ category:"vehicle", name:"🚗 רכב הקרטל הבינלאומי", statKey:"speed", statValue:210 }
     },
-
-
     {
         id:7,
+        minLevel:30,
         name:"השליט הצללי",
         desc:"אף אחד לא ראה את פניו, אבל כולם מפחדים ממנו",
         icon:"🌑",
@@ -151,10 +143,9 @@ const BOSSES = [
         lootChance:0.06,
         loot:{ category:"weapon", name:"🔫 נשק השליט הצללי", statKey:"power", statValue:300 }
     },
-
-
     {
         id:8,
+        minLevel:40,
         name:"קיסר העולם התחתון",
         desc:"האגדה עצמה. מי שמנצח אותו נכנס להיסטוריה",
         icon:"🔱",
@@ -171,740 +162,277 @@ const BOSSES = [
         lootChance:0.05,
         loot:{ category:"armor", name:"🛡️ שריון קיסר העולם התחתון", statKey:"defense", statValue:320 }
     }
-
 ];
-
-
-
-
-
-
-
-
-
+// ==========================================
+// התאמת בוסים לרמת השחקן
+// ==========================================
+function getBossLevelRequirement(boss){
+    return Math.max(1, Number(boss && boss.minLevel) || 1);
+}
+function isBossUnlocked(boss){
+    if(!player || !boss) return false;
+    const level = Math.max(1, Number(player.level) || 1);
+    return level >= getBossLevelRequirement(boss);
+}
+function getBossCombatStats(boss){
+    if(!boss) return {power:0, defense:0};
+    const level = Math.max(1, Number(player && player.level) || 1);
+    return {
+        power: boss.basePower + level * boss.powerPerLevel,
+        defense: boss.baseDefense + level * boss.defensePerLevel
+    };
+}
 // ==========================================
 // עזר: חישוב סף הקושי של בוס לפי רמת השחקן
 // ==========================================
-
 function getBossThreshold(boss){
-
-
-    if(!player){
-
+    if(!player || !boss){
         return 0;
-
     }
-
-
-
-
-    const level =
-
-    typeof player.level === "number"
-
-    ?
-
-    player.level
-
-    :
-
-    1;
-
-
-
-
+    const level = Math.max(1, Number(player.level) || 1);
     const bossPower =
-
-    boss.basePower + level * boss.powerPerLevel;
-
-
-
-
+        boss.basePower + level * boss.powerPerLevel;
     const bossDefense =
-
-    boss.baseDefense + level * boss.defensePerLevel;
-
-
-
-
+        boss.baseDefense + level * boss.defensePerLevel;
     return bossPower + Math.floor(bossDefense * 0.5);
-
-
 }
-
-
-
-
-
-
-
-
-
 // ==========================================
 // סטטוס בוס - זמין / כמה זמן נותר
 // ==========================================
-
 function getBossStatus(bossId){
-
-
     if(!player){
-
         return { ready:false, timeText:"" };
-
     }
-
-
-
-
     const boss =
-
     BOSSES.find(b=>b.id===bossId);
-
-
-
-
     if(!boss){
-
         return { ready:false, timeText:"" };
-
     }
-
-
-
-
     if(!player.bossCooldowns || typeof player.bossCooldowns !== "object"){
-
         player.bossCooldowns = {};
-
     }
-
-
-
-
     const lastAttempt =
-
     player.bossCooldowns[bossId] || 0;
-
-
-
-
     const cooldownMs =
-
     boss.cooldownHours * 60 * 60 * 1000;
-
-
-
-
     const elapsed =
-
     Date.now() - lastAttempt;
-
-
-
-
     if(elapsed >= cooldownMs){
-
-
         return { ready:true, timeText:"" };
-
-
     }
-
-
-
-
     const remain =
-
     cooldownMs - elapsed;
-
-
-
-
     const hours =
-
     Math.floor(remain / (60*60*1000));
-
-
     const minutes =
-
     Math.floor((remain % (60*60*1000)) / (60*1000));
-
-
-
-
     return {
-
         ready:false,
-
         timeText: hours + " שע' " + minutes + " דק'"
-
     };
-
-
 }
-
-
-
-
-
-
-
-
-
 // ==========================================
 // תקיפת בוס
 // ==========================================
-
 function attackBoss(bossId){
-
-
     if(!player){
-
         return false;
-
     }
-
-
-
-
     if(
-
         typeof isHospitalized === "function"
-
         &&
-
         isHospitalized()
-
     ){
-
-
         const hStatus =
-
         typeof getHospitalStatus === "function"
-
         ?
-
         getHospitalStatus()
-
         :
-
         { timeText:"" };
-
-
         showMessage(
-
             "🏥 אתה בבית החולים - עוד " + hStatus.timeText
-
         );
-
-
         return false;
-
-
     }
-
-
-
-
     const boss =
-
     BOSSES.find(b=>b.id===bossId);
-
-
-
-
     if(!boss){
-
         return false;
-
     }
-
-
-
-
+    if(!isBossUnlocked(boss)){
+        showMessage("🔒 הבוס נפתח ברמה " + getBossLevelRequirement(boss));
+        return false;
+    }
     const status =
-
     getBossStatus(bossId);
-
-
-
-
     if(!status.ready){
-
-
         showMessage(
-
             "⏳ " + boss.name + " עוד לא זמין - עוד " + status.timeText
-
         );
-
-
         return false;
-
-
     }
-
-
-
-
     if(player.energy < boss.energyCost){
-
-
         showMessage("⚡ אין מספיק אנרגיה לתקיפת " + boss.name);
-
-
         return false;
-
-
     }
-
-
-
-
     player.energy -= boss.energyCost;
-
-
-
-
     if(!player.bossCooldowns || typeof player.bossCooldowns !== "object"){
-
         player.bossCooldowns = {};
-
     }
-
-
     player.bossCooldowns[bossId] = Date.now();
-
-
-
-
     const attackPower =
-
     typeof getAttackPower === "function"
-
     ?
-
     getAttackPower()
-
     :
-
     (player.power || 0);
-
-
-
-
     const threshold =
-
     getBossThreshold(boss);
-
-
-
-
-    // שונות אקראית קטנה, כמו בקרב רגיל
-
+    // שונות אקראית מוטה 60/40 לטובת ניצחון כשהכוח תואם, כמו בקרב רגיל
     const variance =
-
-    0.9 + Math.random() * 0.2;
-
-
-
-
+    0.88 + Math.random() * 0.2;
     const effectiveThreshold =
-
-    Math.floor(threshold * variance);
-
-
-
-
+    threshold * variance;
     if(attackPower >= effectiveThreshold){
-
-
-
         const blackMoney =
-
         Math.floor(
-
             Math.random() * (boss.rewardBlackMoneyMax - boss.rewardBlackMoneyMin + 1)
-
         ) + boss.rewardBlackMoneyMin;
-
-
-
-
         const diamonds =
-
         Math.floor(
-
             Math.random() * (boss.rewardDiamondsMax - boss.rewardDiamondsMin + 1)
-
         ) + boss.rewardDiamondsMin;
-
-
-
-
         if(typeof player.blackMoney !== "number"){
-
             player.blackMoney = 0;
-
         }
-
         player.blackMoney += blackMoney;
-
-
-
-
         if(typeof player.diamonds !== "number"){
-
             player.diamonds = 0;
-
         }
-
         player.diamonds += diamonds;
-
-
-
-
         addXP(boss.energyCost * 10);
-
-
-
-
         let lootMessage = "";
-
-
-
-
         if(!Array.isArray(player.bossLoot)){
-
             player.bossLoot = [];
-
         }
-
-
-
-
         const alreadyHasLoot =
-
         player.bossLoot.find(l=>l.bossId===boss.id);
-
-
-
-
         if(
-
             !alreadyHasLoot
-
             &&
-
             Math.random() < boss.lootChance
-
         ){
-
-
             player.bossLoot.push({
-
                 bossId:boss.id,
-
                 category:boss.loot.category,
-
                 name:boss.loot.name,
-
                 statKey:boss.loot.statKey,
-
                 statValue:boss.loot.statValue
-
             });
-
-
-
-
             if(typeof player[boss.loot.statKey] !== "number"){
-
                 player[boss.loot.statKey] = 0;
-
             }
-
-
             player[boss.loot.statKey] += boss.loot.statValue;
-
-
-
-
             lootMessage =
-
             " | 🎁 שלל נדיר! קיבלת " + boss.loot.name +
-
             " (+" + boss.loot.statValue + ")";
-
-
         }
-
-
-
-
         showMessage(
-
             "🏆 ניצחת את " + boss.name + "! " +
-
             "+" + blackMoney + " 🖤 +" + diamonds + " 💎" +
-
             lootMessage
-
         );
-
-
-
+        if(typeof dailyAddProgress === "function"){
+            dailyAddProgress("bossesDefeated", 1);
+        }
     }
-
     else{
-
-
-
         const baseDamagePercent =
-
         0.3 + Math.random() * 0.15;
-
-
-
-
         const rawDamage =
-
         Math.floor((player.maxHealth || 100) * baseDamagePercent);
-
-
-
-
         const defense =
-
         player.defense || 0;
-
-
-
-
         const reducedDamage =
-
         Math.max(
-
             5,
-
             rawDamage - Math.floor(defense * 0.5)
-
         );
-
-
-
-
         player.health -= reducedDamage;
-
-
-
-
         let sentToHospital = false;
-
-
         if(player.health <= 0){
-
-
             if(typeof sendToHospital === "function"){
-
                 sendToHospital();
-
             }
-
             else{
-
                 player.health = 0;
-
             }
-
-
             sentToHospital = true;
-
-
         }
-
-
-
-
         let unitLost = false;
-
-
         if(
-
             Math.random() < 0.5
-
             &&
-
             typeof getUnits === "function"
-
             &&
-
             getUnits() > 0
-
         ){
-
-
             const totalUnits =
-
             getUnits();
-
-
-
-
             const avgPower =
-
             Math.max(1, Math.round((player.unitsPower || 0) / totalUnits));
-
-
-
-
             const avgDefense =
-
             (player.unitsDefense || 0) > 0
-
             ?
-
             Math.max(1, Math.round((player.unitsDefense || 0) / totalUnits))
-
             :
-
             0;
-
-
-
-
             if(player.side === "police"){
-
                 player.policeUnits = Math.max(0, player.policeUnits - 1);
-
             }
-
             else{
-
                 player.criminalUnits = Math.max(0, player.criminalUnits - 1);
-
             }
-
-
-
-
             player.power =
-
             Math.max(1, player.power - avgPower);
-
-
             player.unitsPower =
-
             Math.max(0, (player.unitsPower || 0) - avgPower);
-
-
-
-
             if(avgDefense > 0){
-
-
                 player.defense =
-
                 Math.max(1, player.defense - avgDefense);
-
-
                 player.unitsDefense =
-
                 Math.max(0, (player.unitsDefense || 0) - avgDefense);
-
-
             }
-
-
-
-
             unitLost = true;
-
-
         }
-
-
-
-
         showMessage(
-
             "💥 הפסדת מול " + boss.name +
-
             " (-" + reducedDamage + " חיים)" +
-
             (unitLost ? " | 💀 איבדת חייל!" : "") +
-
             (sentToHospital ? " | 🏥 נשלחת לבית החולים ל-4 שעות!" : "")
-
         );
-
-
-
     }
-
-
-
-
     if(typeof saveGame === "function"){
-
         saveGame();
-
     }
-
-
-
-
     if(typeof updateUI === "function"){
-
         updateUI();
-
     }
-
-
-
-
     if(
-
         typeof currentPage !== "undefined"
-
         &&
-
         currentPage === "battle"
-
         &&
-
         typeof renderBattle === "function"
-
     ){
-
-
         const content =
-
         document.getElementById("gameContent");
-
-
         if(content){
-
             renderBattle(content);
-
         }
-
-
     }
-
-
-
-
     return true;
-
-
 }
-
-
-
-
 console.log(
-
     "WARDEAL BOSS v0.1.0 READY"
-
 );
