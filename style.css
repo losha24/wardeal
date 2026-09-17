@@ -3,1896 +3,1179 @@
    Compact Mobile UI
    Player Progress System
 ========================================== */
-
 *{
     box-sizing:border-box;
 }
-
-
 html,
 body{
     margin:0;
     padding:0;
     overflow-x:hidden;
 }
-
-
 body{
-
     background:#0b1220;
-
     color:#fff;
-
     font-family:Arial,sans-serif;
-
 }
-
-
-
 #gameContainer{
-
     width:100%;
-
     max-width:900px;
-
     min-height:100vh;
-
     margin:auto;
-
 }
-
-
-
-
 /* ==========================================
    מסכים - מניעת הבהוב טעינה
 ========================================== */
-
 #startScreen,
 #gameScreen {
     display: none;
 }
-
-
 #startScreen{
-
     flex-direction:column;
-
     align-items:center;
-
     justify-content:center;
-
     min-height:100vh;
-
     width:100%;
-
     max-width:420px;
-
     margin:0 auto;
-
     padding:24px 18px;
-
     text-align:center;
-
 }
-
-
-
-
-
 /* ==========================================
    לוגו
 ========================================== */
-
-
 .logoArea,
 #gameLogo{
-
     text-align:center;
-
     padding:18px 10px;
-
 }
-
-
-
 .logoArea h1,
 #gameLogo h1{
-
     margin:0;
-
     font-size:34px;
-
     background:linear-gradient(135deg,#60a5fa,#c084fc);
-
     -webkit-background-clip:text;
-
     background-clip:text;
-
     color:transparent;
-
     letter-spacing:1px;
-
 }
-
-
-
 .logoArea p,
 #gameLogo span{
-
     color:#94a3b8;
-
     font-size:14px;
-
 }
-
-
-
-
-
 /* ==========================================
    שדה שם שחקן
 ========================================== */
-
-
 #playerName{
-
     display:block;
-
     width:90%;
-
     max-width:300px;
-
     margin:14px auto 8px;
-
     padding:14px 16px;
-
     border-radius:14px;
-
     border:2px solid #334155;
-
     background:#111827;
-
     color:#fff;
-
     font-size:16px;
-
     text-align:center;
-
 }
-
-
-
 #playerName::placeholder{
-
     color:#64748b;
-
 }
-
-
-
 #playerName:focus{
-
     outline:none;
-
     border-color:#3b82f6;
-
     box-shadow:0 0 0 3px rgba(59,130,246,.25);
-
 }
-
-
-
-
-
 /* ==========================================
    בחירת צד
 ========================================== */
-
-
 #startScreen h3{
-
     margin:18px 0 6px;
-
     font-size:15px;
-
     color:#cbd5e1;
-
     letter-spacing:.5px;
-
 }
-
-
-
 .sideButtons{
-
     display:flex;
-
     gap:12px;
-
     padding:6px 4px 10px;
-
     width:100%;
-
 }
-
-
-
 .sideButton{
-
     flex:1;
-
+    min-width:0;
     min-height:112px;
-
     border-radius:18px;
-
     border:2px solid #334155;
-
     background:#111827;
-
     color:#fff;
-
     font-size:22px;
-
     box-shadow:0 4px 14px rgba(0,0,0,.35);
-
     transition:transform .15s ease,border-color .15s ease;
-
 }
-
-
-
 .sideButton:active{
-
     transform:scale(.96);
-
 }
-
-
-
 .sideButton small{
-
     display:block;
-
     margin-top:8px;
-
     font-size:12px;
-
     color:#cbd5e1;
-
 }
-
-
-
 #policeChoice{
-
     background:linear-gradient(
         135deg,
         #1e3a8a,
         #0f172a
     );
-
     border-color:#3b82f6;
-
 }
-
-
-
 #criminalChoice{
-
     background:linear-gradient(
         135deg,
         #581c87,
         #0f172a
     );
-
     border-color:#a855f7;
-
 }
-
-
-
 .sideButton.active{
-
     border-color:#facc15;
-
     box-shadow:0 0 0 3px rgba(250,204,21,.3),0 4px 14px rgba(0,0,0,.35);
-
 }
-
-
-
 .sideButton:disabled{
-
     opacity:.45;
-
     cursor:not-allowed;
-
 }
-
-
-
 #playerName:disabled{
-
     opacity:.6;
-
     cursor:not-allowed;
-
 }
-
-
-
-
-
 /* ==========================================
    כפתור כניסה
 ========================================== */
-
-
 .mainButton{
-
     display:block;
-
     width:90%;
-
     max-width:300px;
-
     margin:18px auto 6px;
-
     padding:15px;
-
     border:0;
-
     border-radius:16px;
-
     background:linear-gradient(135deg,#3b82f6,#2563eb);
-
     color:#fff;
-
     font-size:18px;
-
     font-weight:bold;
-
     box-shadow:0 6px 18px rgba(37,99,235,.4);
-
     transition:transform .15s ease;
-
 }
-
-
-
 .mainButton:active{
-
     transform:scale(.97);
-
 }
-
-
-
 .startScreenMessage{
-
     min-height:18px;
-
     margin:8px 0 0;
-
     color:#f87171;
-
     font-size:13px;
-
     text-align:center;
-
 }
-
-
-
 .quickActionsRow{
-
     display:flex;
-
     gap:8px;
-
     margin-top:14px;
-
 }
-
-
-
 .quickActionBtn{
-
     flex:1;
-
+    min-width:0;
     max-width:none;
-
     width:auto;
-
 }
-
-
-
 .mainButton:disabled{
-
     opacity:.5;
-
     cursor:not-allowed;
-
     box-shadow:none;
-
 }
-
-
-
 .convertInput{
-
     display:block;
-
     width:100%;
-
     margin:8px 0;
-
     padding:10px;
-
     border-radius:10px;
-
     border:2px solid #334155;
-
     background:#0f172a;
-
     color:#fff;
-
     font-size:15px;
-
     text-align:center;
-
 }
-
-
-
 .convertInput:focus{
-
     outline:none;
-
     border-color:#3b82f6;
-
 }
-
-
-
-
-
 /* ==========================================
    הודעות
 ========================================== */
-
-
 #welcomeBox{
-
     margin:8px;
-
     padding:10px;
-
     text-align:center;
-
     background:#111827;
-
     border:1px solid #334155;
-
     border-radius:12px;
-
 }
-
-
-
 .showMessage{
-
     animation:messageShow .3s ease;
-
 }
-
-
-
 @keyframes messageShow{
-
     from{
-
         opacity:0;
-
     }
-
-
     to{
-
         opacity:1;
-
     }
-
 }
 /* ==========================================
    סרגל משאבים
 ========================================== */
-
-
 #topBar{
-
     display:grid;
-
-    grid-template-columns:repeat(4,1fr);
-
+    grid-template-columns:repeat(4,minmax(0,1fr));
     gap:6px;
-
     margin:8px;
-
     padding:8px;
-
     background:#111827;
-
     border:1px solid #334155;
-
     border-radius:14px;
-
 }
-
-
-
 #topBar div{
-
     text-align:center;
-
     padding:6px 2px;
-
     background:#1e293b;
-
     border-radius:10px;
-
     font-size:14px;
-
 }
-
-
-
 #topBar span{
-
     display:block;
-
     margin-top:3px;
-
     font-weight:bold;
-
 }
-
-
-
-
-
 /* ==========================================
    כרטיס שחקן
 ========================================== */
-
-
 #playerBox{
-
     margin:8px;
-
     padding:10px;
-
     background:#111827;
-
     border:1px solid #334155;
-
     border-radius:16px;
-
 }
-
-
-
-
-
 .playerIdentity{
-
     display:flex;
-
     align-items:center;
-
     gap:10px;
-
 }
-
-
-
-
-
 .sideBadge{
-
     width:48px;
-
     height:48px;
-
     display:flex;
-
     align-items:center;
-
     justify-content:center;
-
     border-radius:50%;
-
     background:#1e293b;
-
     font-size:24px;
-
 }
-
-
-
-
-
 .playerInfo{
-
     flex:1;
-
 }
-
-
-
-
-
 .playerInfo h2{
-
     margin:0;
-
     font-size:18px;
-
 }
-
-
-
-
-
 .playerInfo p{
-
     margin:3px 0 0;
-
     color:#cbd5e1;
-
     font-size:13px;
-
 }
-
-
-
-
-
-
-
-
-
 /* ==========================================
    סטטוסים עם פסי התקדמות
 ========================================== */
-
-
 .miniStats{
-
     display:grid;
-
-    grid-template-columns:repeat(3,1fr);
-
+    grid-template-columns:repeat(3,minmax(0,1fr));
     gap:7px;
-
     margin-top:10px;
-
 }
-
-
-
-
-
 .statBox{
-
     background:#0f172a;
-
     border:1px solid #334155;
-
     border-radius:10px;
-
     padding:7px 5px;
-
     text-align:center;
-
 }
-
-
-
-
-
 .statTitle{
-
     font-size:12px;
-
     color:#cbd5e1;
-
 }
-
-
-
-
-
 .statBox span{
-
     display:block;
-
     margin-top:3px;
-
     font-size:17px;
-
     font-weight:bold;
-
 }
-
-
-
-
-
 /* ==========================================
    פס התקדמות
 ========================================== */
-
-
 .progress{
-
     width:100%;
-
     height:6px;
-
     margin-top:6px;
-
     background:#1e293b;
-
     border-radius:10px;
-
     overflow:hidden;
-
 }
-
-
-
-
-
 .progressFill{
-
     height:100%;
-
     width:0%;
-
     border-radius:10px;
-
     transition:width .4s ease;
-
 }
-
-
-
-
-
 .healthFill{
-
     background:#ef4444;
-
 }
-
-
-
-
-
 .energyFill{
-
     background:#22c55e;
-
 }
-
-
-
-
-
 .powerFill{
-
     background:#f97316;
-
 }
-
-
-
-
-
 .unitsFill{
-
     background:#3b82f6;
-
 }
-
-
-
-
-
 .xpFill{
-
     background:#eab308;
-
 }
-
-
-
-
-
 .levelFill{
-
     background:#a855f7;
-
 }
-
-
-
-
-
 .playerId{
-
     margin-top:8px;
-
     padding:6px;
-
     text-align:center;
-
     background:#0f172a;
-
     border-radius:8px;
-
     color:#94a3b8;
-
     font-size:11px;
-
 }
 /* ==========================================
    תפריט ראשי
 ========================================== */
-
-
 #mainMenu{
-
     display:grid;
-
-    grid-template-columns:repeat(4,1fr);
-
+    grid-template-columns:repeat(4,minmax(0,1fr));
     gap:5px;
-
     padding:8px;
-
     position:sticky;
-
     top:0;
-
     z-index:10;
-
     background:#0b1220;
-
 }
-
-
-
-
-
 .menuButton{
-
     border:0;
-
     border-radius:12px;
-
     background:#111827;
-
     color:#fff;
-
     padding:8px 3px;
-
     font-size:17px;
-
 }
-
-
-
-
-
 .menuButton.active{
-
     background:#2563eb;
-
     border:1px solid #60a5fa;
-
 }
-
-
-
-
-
 /* ==========================================
    אזור תוכן
 ========================================== */
-
-
 #gameContent{
-
     margin:8px;
-
     padding:10px;
-
     min-height:200px;
-
     background:#0f172a;
-
     border:1px solid #334155;
-
     border-radius:16px;
-
 }
-
-
-
-
-
 .contentCard{
-
     background:#111827;
-
     border:1px solid #334155;
-
     border-radius:14px;
-
     padding:12px;
-
 }
-
-
-
-
-
 .contentCard h3{
-
     margin:0 0 10px;
-
     text-align:center;
-
     font-size:20px;
-
 }
-
-
-
-
-
 /* ==========================================
    מערכות משחק
 ========================================== */
-
-
 .optionGrid{
-
     display:grid;
-
-    grid-template-columns:repeat(2,1fr);
-
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px;
-
 }
-
-
-
-
-
 .optionCard{
-
     min-height:80px;
-
     padding:10px;
-
     border-radius:12px;
-
     border:1px solid #334155;
-
     background:#1e293b;
-
     color:#fff;
-
     font-size:15px;
-
 }
-
-
-
-
-
 .optionCard:active{
-
     transform:scale(.97);
-
 }
-
-
-
-
-
 /* ==========================================
    אנימציית רמה
 ========================================== */
-
-
 .levelUp{
-
     animation:levelAnimation 1s ease;
-
 }
-
-
-
-
-
 @keyframes levelAnimation{
-
     0%{
-
         transform:scale(1);
-
     }
-
-
     50%{
-
         transform:scale(1.3);
-
     }
-
-
     100%{
-
         transform:scale(1);
-
     }
-
 }
-
-
-
-
-
 /* ==========================================
    מגע
 ========================================== */
-
-
 button{
-
     -webkit-tap-highlight-color:transparent;
-
     user-select:none;
-
     touch-action:manipulation;
-
 }
-
-
-
-
-
 /* ==========================================
    מובייל
 ========================================== */
-
-
 /* ==========================================
    מידע קרב (combat.js)
 ========================================== */
-
-
 .battleInfo{
-
     background:#1e293b;
-
     border:1px solid #334155;
-
     border-radius:12px;
-
     padding:10px 12px;
-
     margin-top:10px;
-
     margin-bottom:4px;
-
     font-size:14px;
-
     display:flex;
-
     flex-direction:column;
-
     gap:6px;
-
 }
-
-
-
 .battleInfoSub{
-
     display:block;
-
     font-size:11px;
-
     color:#94a3b8;
-
     margin-top:2px;
-
 }
-
-
-
-
-
 /* ==========================================
    כרטיסי בעלות + שדרוג (נכסים ועסקים)
 ========================================== */
-
-
 .ownedCard{
-
     background:#1e293b;
-
     border:1px solid #334155;
-
     border-radius:12px;
-
     padding:10px 12px;
-
     margin-bottom:8px;
-
 }
-
-
-
 .bossGrid{
-
     display:grid;
-
-    grid-template-columns:repeat(2,1fr);
-
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px;
-
 }
-
-
-
 .bossGrid .ownedCard{
-
     margin-bottom:0;
-
 }
-
-
-
 .ownedCardName{
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     font-size:14px;
-
     font-weight:bold;
-
 }
-
-
-
 .ownedCardLevel{
-
     font-size:12px;
-
     font-weight:normal;
-
     color:#a855f7;
-
     background:#0f172a;
-
     border-radius:8px;
-
     padding:2px 8px;
-
 }
-
-
-
 .ownedCardRow{
-
     margin-top:4px;
-
     font-size:13px;
-
     color:#cbd5e1;
-
 }
-
-
-
 .upgradeBtn{
-
     width:100%;
-
     margin-top:8px;
-
     padding:8px;
-
     border:0;
-
     border-radius:10px;
-
     background:#7c3aed;
-
     color:#fff;
-
     font-size:13px;
-
 }
-
-
-
 .upgradeBtn:disabled{
-
     opacity:.4;
-
 }
-
-
-
 .upgradeBtn:active{
-
     transform:scale(.97);
-
 }
-
-
-
 .blackUpgradeBtn{
-
     background:#1a1a1a;
-
     border:1px solid #444;
-
     margin-top:6px;
-
 }
-
-
-
 .specialUpgradeBadge{
-
     margin-top:8px;
-
     padding:8px;
-
     text-align:center;
-
     background:#1a1a1a;
-
     border:1px solid #444;
-
     border-radius:10px;
-
     font-size:13px;
-
     color:#cbd5e1;
-
 }
-
-
-
-
-
 /* ==========================================
    מסך עיר - לוח מחוונים וחדשות (city.js)
 ========================================== */
-
-
 .cityStatsGrid{
-
     display:grid;
-
-    grid-template-columns:repeat(2,1fr);
-
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px;
-
     margin-top:10px;
-
 }
-
-
-
 .cityStatBox{
-
     background:#1e293b;
-
     border:1px solid #334155;
-
     border-radius:12px;
-
     padding:10px 6px;
-
     text-align:center;
-
     font-size:13px;
-
     color:#cbd5e1;
-
 }
-
-
-
 .cityStatBox span{
-
     display:block;
-
     margin-top:4px;
-
     font-size:18px;
-
     font-weight:bold;
-
     color:#fff;
-
 }
-
-
-
 .cityNoNews{
-
     color:#94a3b8;
-
     font-size:13px;
-
     text-align:center;
-
     padding:10px 0;
-
 }
-
-
-
 .cityNewsList{
-
     display:flex;
-
     flex-direction:column;
-
     gap:6px;
-
 }
-
-
-
 .cityNewsItem{
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     gap:8px;
-
     background:#1e293b;
-
     border:1px solid #334155;
-
     border-radius:10px;
-
     padding:8px 10px;
-
     font-size:13px;
-
 }
-
-
-
+.cityNewsItem > span:first-child{
+    min-width:0;
+    flex:1;
+    overflow-wrap:break-word;
+}
 .cityNewsAmount{
-
     font-weight:bold;
-
     white-space:nowrap;
-
 }
-
-
-
 .cityNewsPositive .cityNewsAmount{
-
     color:#22c55e;
-
 }
-
-
-
 .cityNewsNegative .cityNewsAmount{
-
     color:#ef4444;
-
 }
-
-
-
-
-
 /* ==========================================
    עבודות פעילות (jobs.js)
 ========================================== */
-
-
 .activeJobCard{
-
     background:#1e293b;
-
     border:1px solid #334155;
-
     border-radius:10px;
-
     padding:8px 10px;
-
     margin-bottom:8px;
-
 }
-
-
-
 .activeJobName{
-
     font-size:14px;
-
     margin-bottom:4px;
-
 }
-
-
-
 .jobFill{
-
     background:#38bdf8;
-
 }
-
-
-
 .jobTimeLeft{
-
     margin-top:4px;
-
     font-size:12px;
-
     color:#94a3b8;
-
     text-align:left;
-
 }
-
-
-
 .optionCard:disabled{
-
     opacity:.45;
-
 }
-
-
-
 .optionCard h4,
 h4{
-
     margin:10px 0 6px;
-
     font-size:15px;
-
     color:#cbd5e1;
-
 }
-
-
-
-
-
 /* ==========================================
    כפתורי הגדרות (יציאה / משחק חדש)
 ========================================== */
-
-
 .gameControls{
-
     display:flex;
-
     gap:8px;
-
     justify-content:center;
-
     padding:0 8px 8px;
-
 }
-
-
-
 .smallButton{
-
     flex:1;
-
+    min-width:0;
     max-width:180px;
-
     padding:8px;
-
     border:1px solid #334155;
-
     border-radius:10px;
-
     background:#1e293b;
-
     color:#fff;
-
     font-size:13px;
-
 }
-
-
-
 .smallButton:active{
-
     transform:scale(.97);
-
 }
-
-
-
-
-
 @media(max-width:600px){
-
-
     #mainMenu{
-
-        grid-template-columns:repeat(3,1fr);
-
+        grid-template-columns:repeat(3,minmax(0,1fr));
     }
-
-
-
     .miniStats{
-
-        grid-template-columns:repeat(3,1fr);
-
+        grid-template-columns:repeat(3,minmax(0,1fr));
     }
-
-
-
     .optionGrid{
-
-        grid-template-columns:repeat(2,1fr);
-
+        grid-template-columns:repeat(2,minmax(0,1fr));
     }
-
-
-
     .sideButton{
-
         min-height:90px;
-
         font-size:18px;
-
     }
-
-
 }
-
-
-
-
-
 @media(max-width:400px){
-
-
     .logoArea h1,
     #gameLogo h1{
-
         font-size:24px;
-
     }
-
-
-
     #topBar{
-
         margin:5px;
-
         gap:4px;
-
     }
-
-
-
     #topBar div{
-
         font-size:12px;
-
     }
-
-
-
     #playerBox{
-
         padding:8px;
-
     }
-
-
-
     .miniStats{
-
         gap:5px;
-
     }
-
-
-
     .statBox{
-
         padding:5px 3px;
-
     }
-
-
-
     .statTitle{
-
         font-size:11px;
-
     }
-
-
-
     .statBox span{
-
         font-size:15px;
-
     }
-
-
-
     .menuButton{
-
         font-size:15px;
-
         padding:6px 2px;
-
     }
-
-
-
     .optionCard{
-
         font-size:13px;
-
         min-height:75px;
-
     }
-
-
 }
-
-
 /* ==========================================
    כפתור עזרה
 ========================================== */
-
-
 .helpButton{
-
     position:fixed;
-
     top:10px;
-
     left:10px;
-
     z-index:999;
-
     width:36px;
-
     height:36px;
-
     border-radius:50%;
-
     border:1px solid #334155;
-
     background:#111827;
-
     color:#fff;
-
     font-size:16px;
-
     box-shadow:0 2px 8px rgba(0,0,0,.4);
-
 }
-
-
-
 .helpButton:active{
-
     transform:scale(.95);
-
 }
-
-
-
-
-
 /* ==========================================
    חלונות מודל (עזרה + ברוך שובך)
 ========================================== */
-
-
 .modalOverlay{
-
     display:none;
-
     position:fixed;
-
     inset:0;
-
     background:rgba(0,0,0,.75);
-
     z-index:1000;
-
     align-items:center;
-
     justify-content:center;
-
     padding:16px;
-
 }
-
-
-
 .modalOverlay.modalOpen{
-
     display:flex;
-
 }
-
-
-
 .modalBox{
-
     position:relative;
-
     width:100%;
-
     max-width:420px;
-
     max-height:82vh;
-
     overflow-y:auto;
-
     background:#111827;
-
     border:1px solid #334155;
-
     border-radius:18px;
-
     padding:18px;
-
 }
-
-
-
 .modalBox h3{
-
     margin:0 0 12px;
-
     text-align:center;
-
     font-size:19px;
-
 }
-
-
-
 .modalCloseBtn{
-
     position:absolute;
-
     top:10px;
-
     left:10px;
-
     width:30px;
-
     height:30px;
-
     border-radius:50%;
-
     border:1px solid #334155;
-
     background:#1e293b;
-
     color:#fff;
-
     font-size:14px;
-
 }
-
-
-
 .helpItem{
-
     margin-bottom:12px;
-
     padding:10px 12px;
-
     background:#1e293b;
-
     border-radius:12px;
-
 }
-
-
-
 .helpItem b{
-
     display:block;
-
     margin-bottom:3px;
-
     font-size:14px;
-
 }
-
-
-
 .helpItem span{
-
     font-size:13px;
-
     color:#cbd5e1;
-
 }
-
-
-
 .welcomeBackRow{
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     padding:8px 10px;
-
     background:#1e293b;
-
     border-radius:10px;
-
     margin-bottom:8px;
-
     font-size:14px;
-
 }
-
-
-
 .welcomeBackJobsList{
-
     margin:8px 0;
-
     display:flex;
-
     flex-direction:column;
-
     gap:6px;
-
+}
+/* ==========================================
+   WARDEAL v0.6.0 - Shop Step 2
+   קטגוריות + נשקים 2 בשורה + רמת פריט
+========================================== */
+.shopCard{
+    overflow:hidden;
+}
+.shopBalance{
+    margin-bottom:12px;
+}
+.shopCategoryGrid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:8px;
+    margin:10px 0 16px;
+}
+.shopCategoryBtn{
+    min-width:0;
+    border:1px solid #334155;
+    border-radius:12px;
+    background:#111827;
+    color:#cbd5e1;
+    padding:10px 5px;
+    font-size:18px;
+    cursor:pointer;
+    transition:transform .15s,border-color .15s,background .15s;
+}
+.shopCategoryBtn span{
+    display:block;
+    margin-top:4px;
+    font-size:12px;
+    font-weight:700;
+}
+.shopCategoryBtn.active{
+    border-color:#60a5fa;
+    background:#172554;
+    color:#fff;
+    box-shadow:0 0 0 1px rgba(96,165,250,.18);
+}
+.shopGridTwo,
+.weaponGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+    margin-bottom:12px;
+}
+.shopSectionTitle{
+    margin:8px 0 10px;
+    font-size:17px;
+}
+.shopItemCard{
+    min-width:0;
+    padding:11px 9px;
+    border-radius:13px;
+}
+.shopItemName{
+    font-weight:800;
+    font-size:14px;
+    line-height:1.3;
+    overflow-wrap:anywhere;
+}
+.shopWeaponLevel{
+    display:inline-block;
+    margin-top:5px;
+    padding:3px 7px;
+    border-radius:8px;
+    background:#1e293b;
+    color:#93c5fd;
+    font-size:11px;
+    font-weight:800;
+}
+.shopPrice,
+.shopStat{
+    margin-top:7px;
+    font-size:12px;
+}
+.shopStat{
+    font-weight:700;
+}
+.shopBuyCard{
+    text-align:center;
+    cursor:pointer;
+}
+.shopOwnedGrid .upgradeBtn{
+    width:100%;
+    margin-top:8px;
+    font-size:11px;
+    padding:8px 5px;
+}
+.shopSpecialCard{
+    text-align:center;
+    padding:24px 16px;
+    border:1px solid #334155;
+    border-radius:16px;
+    background:#0f172a;
+}
+.shopSpecialIcon{
+    font-size:38px;
+    margin-bottom:5px;
+}
+.shopSpecialCard h4{
+    margin:5px 0 8px;
+}
+.shopSpecialCard p{
+    color:#94a3b8;
+    line-height:1.5;
+    font-size:13px;
+}
+.shopComingSoon{
+    margin-top:12px;
+    padding:9px;
+    border-radius:10px;
+    background:#111827;
+    color:#cbd5e1;
+    font-size:12px;
+}
+@media(max-width:360px){
+    .shopCategoryGrid{gap:5px;}
+    .shopCategoryBtn{padding:8px 2px;font-size:16px;}
+    .shopCategoryBtn span{font-size:10px;}
+    .shopGridTwo,.weaponGrid{gap:6px;}
+    .shopItemName{font-size:12px;}
+}
+/* ==========================================
+   פעולות מיוחדות — WARDEAL v0.6.0 STEP 3
+========================================== */
+.specialActionsPanel{
+    overflow:hidden;
+}
+.actionsIntro{
+    margin:6px 0 12px;
+    color:#94a3b8;
+    font-size:12px;
+    line-height:1.55;
+    text-align:center;
+}
+.specialActionsGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+}
+.specialActionCard{
+    min-width:0;
+    background:#111827;
+    border:1px solid #334155;
+    border-radius:12px;
+    padding:11px;
+    display:flex;
+    flex-direction:column;
+    text-align:center;
+}
+.specialActionWide{
+    grid-column:1 / -1;
+}
+.specialActionIcon{
+    font-size:25px;
+    line-height:1;
+    margin-bottom:5px;
+}
+.specialActionTitle{
+    font-size:14px;
+    font-weight:800;
+    color:#f8fafc;
+}
+.specialActionText{
+    margin-top:5px;
+    min-height:42px;
+    color:#94a3b8;
+    font-size:11px;
+    line-height:1.45;
+}
+.specialActionStatus{
+    margin:7px 0;
+    color:#cbd5e1;
+    font-size:11px;
+    min-height:17px;
+}
+.specialActionBtn{
+    width:100%;
+    margin-top:auto;
+}
+.convertActionRow{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:7px;
+    align-items:center;
+}
+.convertActionRow .convertInput{
+    box-sizing:border-box;
+    margin:0;
+    min-width:0;
+}
+.convertActionBtn{
+    min-height:40px;
+}
+.specialActionHint{
+    margin-top:7px;
+    color:#64748b;
+    font-size:10px;
+    line-height:1.45;
+}
+@media(max-width:390px){
+    .specialActionsGrid{
+        grid-template-columns:1fr;
+    }
+    .specialActionWide{
+        grid-column:auto;
+    }
+    .convertActionRow{
+        grid-template-columns:1fr;
+    }
+}
+/* ==========================================
+   DAILY MISSIONS v0.5.0
+========================================== */
+.dailyMissionsPanel{width:100%;box-sizing:border-box}
+.dailyIntro{text-align:center;opacity:.82;margin:4px 0 12px}
+.dailySummary{text-align:center;padding:8px 10px;margin-bottom:12px;border-radius:12px;background:rgba(255,255,255,.05)}
+.dailyGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dailyMissionCard{min-width:0;padding:12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);box-sizing:border-box;text-align:center}
+.dailyMissionCard.claimed{opacity:.7}
+.dailyMissionIcon{font-size:28px;line-height:1.1;margin-bottom:4px}
+.dailyMissionName{font-weight:800;font-size:16px}
+.dailyMissionDesc{font-size:12px;opacity:.78;min-height:30px;margin:5px 0}
+.dailyMissionProgressText{font-size:12px;font-weight:700;margin:5px 0}
+.dailyProgress{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin:6px 0 8px}
+.dailyProgress>div{height:100%;border-radius:99px;background:linear-gradient(90deg,#8b5cf6,#22d3ee)}
+.dailyReward{font-size:11px;line-height:1.5;min-height:32px}
+.dailyClaimBtn{width:100%;margin-top:7px;font-size:12px}
+.dailyClaimBtn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:430px){.dailyGrid{gap:7px}.dailyMissionCard{padding:9px}.dailyMissionName{font-size:14px}.dailyMissionDesc{font-size:11px}.dailyReward{font-size:10px}}
+@media(max-width:340px){.dailyGrid{grid-template-columns:1fr}}
+/* ==========================================
+   WARDEAL v0.6.0 - מפקדה
+========================================== */
+.headquartersPanel{margin:10px 0;padding:12px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(255,255,255,.035)}
+.headquartersTop{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:14px}
+.headquartersLevel{display:inline-block;margin-right:8px;font-weight:800}
+.headquartersBadge{font-size:11px;padding:5px 8px;border-radius:10px;background:rgba(120,90,255,.16)}
+.headquartersProgress{height:8px;margin:9px 0;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.08)}
+.headquartersProgress div{height:100%;border-radius:inherit;background:linear-gradient(90deg,#6f4cff,#21d4fd);transition:width .25s ease}
+.headquartersBenefits{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;opacity:.9}
+.headquartersBenefits span{padding:7px;border-radius:9px;background:rgba(0,0,0,.16);text-align:center}
+.headquartersUpgradeBtn{width:100%;margin-top:9px}
+.headquartersMax{margin-top:9px;text-align:center;font-size:12px;font-weight:800}
+.headquartersGiftCard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;margin:9px 0;padding:10px;border-radius:14px;border:1px solid rgba(255,215,0,.18);background:rgba(255,215,0,.045)}
+.headquartersGiftIcon{font-size:25px}
+.headquartersGiftInfo{display:flex;flex-direction:column;gap:3px;min-width:0}
+.headquartersGiftInfo span{font-size:11px;opacity:.78}
+.headquartersGiftCard button:disabled{opacity:.45}
+@media(max-width:420px){.headquartersBenefits{grid-template-columns:1fr}.headquartersTop{align-items:flex-start;flex-direction:column}.headquartersGiftCard{grid-template-columns:auto 1fr}.headquartersGiftCard button{grid-column:1/-1;width:100%}}
+/* ==========================================
+   WARDEAL v0.6.0 - נדל״ן מאוחד
+========================================== */
+.realEstateHub{
+    width:100%;
+}
+.realEstateTabs{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin:10px 0 14px;
+}
+.realEstateTab{
+    min-width:0;
+    padding:12px 8px;
+    border:1px solid #334155;
+    border-radius:12px;
+    background:#111827;
+    color:#cbd5e1;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+}
+.realEstateTab.active{
+    border-color:#60a5fa;
+    background:#1e293b;
+    color:#fff;
+    box-shadow:0 0 0 2px rgba(96,165,250,.15);
+}
+.realEstateHub .optionGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.realEstateHub .ownedCard{
+    min-width:0;
+}
+@media(max-width:360px){
+    .realEstateTabs{
+        gap:6px;
+    }
+    .realEstateTab{
+        font-size:13px;
+        padding:10px 5px;
+    }
+}
+/* ==========================================
+   קרבות רגילים - 6 קרבות, 2 בשורה
+========================================== */
+.battleGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-top:12px;
+}
+.battleCard{
+    min-width:0;
+    padding:12px;
+    border:1px solid #334155;
+    border-radius:14px;
+    background:#111827;
+    text-align:center;
+}
+.battleCard.locked{opacity:.62;}
+.battleIcon{font-size:30px;line-height:1.2;margin-bottom:4px;}
+.battleCard h4{margin:4px 0 6px;font-size:16px;}
+.battleCard p{margin:0 0 8px;font-size:12px;line-height:1.4;min-height:34px;}
+.battleMeta{font-size:11px;margin:4px 0;color:#cbd5e1;}
+.battleFightBtn{
+    width:100%;
+    min-height:42px;
+    margin-top:8px;
+    border:1px solid #475569;
+    border-radius:10px;
+    background:#1e293b;
+    color:#fff;
+    font-weight:700;
+}
+.battleFightBtn:disabled{opacity:.45;cursor:not-allowed;}
+.battleInfoSub{display:block;font-size:11px;opacity:.72;margin-top:2px;}
+@media(max-width:380px){
+    .battleGrid{gap:6px;}
+    .battleCard{padding:9px;}
+    .battleCard h4{font-size:14px;}
+    .battleCard p{font-size:11px;}
+}
+/* WARDEAL v0.6.0 station / operations layout */
+.specialActionsGrid.operationGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.specialActionsGrid.operationGrid .specialActionCard{min-width:0;margin:0;}
+.realEstateTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.realEstateTab{width:100%;}
+.shopCategoryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+@media(max-width:420px){.specialActionsGrid.operationGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.specialActionCard{padding:8px}.specialActionTitle{font-size:13px}.specialActionText{font-size:11px}.shopCategoryGrid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+/* WARDEAL v0.6.0 - real estate owned cards 2 per row */
+.realEstateItemsGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:12px;
+}
+.realEstateItemsGrid .ownedCard{min-width:0;margin:0;}
+@media(max-width:380px){
+    .realEstateItemsGrid{gap:7px;}
+    .realEstateItemsGrid .ownedCard{padding:8px;}
+}
+/* WARDEAL v0.6.0 - footer */
+.warDealFooter{
+    width:100%;
+    box-sizing:border-box;
+    text-align:center;
+    padding:14px 10px 20px;
+    margin-top:16px;
+    font-size:11px;
+    opacity:.72;
+    direction:rtl;
 }
