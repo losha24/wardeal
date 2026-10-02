@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.3.3
+   WARDEAL v2.0
    Application Controller
    Auto Login + Screen Fix + Stable Engine
 ========================================== */
@@ -536,5 +536,5 @@ function checkSystemReady() {
     );
 }
 console.log(
-    "WARDEAL APP v0.3.3 FIXED READY"
+    "WARDEAL APP v2.0 FIXED READY"
 );

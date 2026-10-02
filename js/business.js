@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.4.0
+   WARDEAL v2.2
    Business System
    8 עסקים, XP וכסף תואמים במדויק למוצג ב-UI
 ========================================== */
@@ -229,52 +229,131 @@ function upgradeBusiness(index){
     return true;
 }
 // ==========================================
-// שדרוג מיוחד בכסף שחור (חד-פעמי לכל עסק)
+// שדרוג מיוחד לעסק - עד 10 רמות
+// עלות: כסף שחור + יהלומים
 // ==========================================
-function buyBusinessSpecialUpgrade(index){
-    if(
-        !player ||
-        !Array.isArray(player.businesses)
-    ){
-        return false;
+const BUSINESS_SPECIAL_MAX_LEVEL = 10;
+
+function getBusinessSpecialUpgradeInfo(index){
+    if(!player || !Array.isArray(player.businesses)) return null;
+
+    const business = player.businesses[index];
+    if(!business) return null;
+
+    const definition = BUSINESS_LIST.find(b => b.id === business.id);
+    if(!definition) return null;
+
+    let currentLevel = Number(business.specialUpgradeLevel || 0);
+
+    // תאימות לשמירות ישנות
+    if(currentLevel < 1 && business.specialUpgrade === true){
+        currentLevel = 1;
+        business.specialUpgradeLevel = 1;
     }
-    const business =
-    player.businesses[index];
-    if(!business){
-        return false;
-    }
-    if(business.specialUpgrade === true){
-        showBusinessMessage("🖤 כבר בוצע שדרוג מיוחד לעסק זה");
-        return false;
-    }
-    const definition =
-    BUSINESS_LIST.find(b => b.id === business.id);
-    const cost =
-    definition && typeof definition.specialUpgradeCost === "number"
-    ?
-    definition.specialUpgradeCost
-    :
-    50;
-    const bonus =
-    definition && typeof definition.specialUpgradeBonus === "number"
-    ?
-    definition.specialUpgradeBonus
-    :
-    50;
-    if((player.blackMoney || 0) < cost){
-        showBusinessMessage("🖤 אין מספיק כסף שחור לשדרוג המיוחד");
-        return false;
-    }
-    player.blackMoney -= cost;
-    business.income += bonus;
-    business.specialUpgrade = true;
-    showBusinessMessage(
-        "🖤 שדרוג מיוחד בוצע ל-" + business.name +
-        " (+" + bonus + " ₪/דקה לצמיתות)"
+
+    currentLevel = Math.max(
+        0,
+        Math.min(BUSINESS_SPECIAL_MAX_LEVEL, Math.floor(currentLevel))
     );
+
+    if(currentLevel >= BUSINESS_SPECIAL_MAX_LEVEL){
+        return {
+            currentLevel,
+            nextLevel: BUSINESS_SPECIAL_MAX_LEVEL,
+            maxed: true,
+            blackCost: 0,
+            diamondCost: 0,
+            bonus: 0
+        };
+    }
+
+    const nextLevel = currentLevel + 1;
+    const baseBlack = Number(definition.specialUpgradeCost || 50);
+    const baseBonus = Number(definition.specialUpgradeBonus || 50);
+
+    const blackCost = Math.max(
+        1,
+        Math.ceil(baseBlack * Math.pow(1.45, currentLevel))
+    );
+
+    const diamondCost = Math.max(
+        1,
+        Math.ceil((Number(definition.price) || 100000) / 1000000)
+        + Math.floor(currentLevel / 2)
+    );
+
+    const bonus = Math.max(
+        1,
+        Math.floor(baseBonus * Math.pow(1.35, currentLevel))
+    );
+
+    return {
+        currentLevel,
+        nextLevel,
+        maxed: false,
+        blackCost,
+        diamondCost,
+        bonus
+    };
+}
+
+function buyBusinessSpecialUpgrade(index){
+    if(!player || !Array.isArray(player.businesses)) return false;
+
+    const business = player.businesses[index];
+    if(!business) return false;
+
+    const info = getBusinessSpecialUpgradeInfo(index);
+    if(!info){
+        showBusinessMessage("🏢 נתוני השדרוג המיוחד לא נמצאו");
+        return false;
+    }
+
+    if(info.maxed){
+        showBusinessMessage(
+            "⭐ העסק כבר ברמת השדרוג המיוחד המקסימלית — רמה " +
+            BUSINESS_SPECIAL_MAX_LEVEL
+        );
+        return false;
+    }
+
+    if((player.blackMoney || 0) < info.blackCost){
+        showBusinessMessage(
+            "🖤 אין מספיק כסף שחור. נדרש " +
+            info.blackCost.toLocaleString()
+        );
+        return false;
+    }
+
+    if((player.diamonds || 0) < info.diamondCost){
+        showBusinessMessage(
+            "💎 אין מספיק יהלומים. נדרש " +
+            info.diamondCost
+        );
+        return false;
+    }
+
+    player.blackMoney -= info.blackCost;
+    player.diamonds -= info.diamondCost;
+
+    business.income =
+        Number(business.income || 0) + info.bonus;
+
+    business.specialUpgradeLevel = info.nextLevel;
+    business.specialUpgrade = info.nextLevel >= 1;
+
+    showBusinessMessage(
+        "⭐ " + business.name +
+        " שודרג במיוחד לרמה " + info.nextLevel +
+        " | +" + info.bonus.toLocaleString() +
+        " ₪/דקה | 🖤 -" + info.blackCost.toLocaleString() +
+        " | 💎 -" + info.diamondCost
+    );
+
     saveBusinessUpdate();
     return true;
 }
+
 // ==========================================
 // רשימת עסקים
 // ==========================================
@@ -337,5 +416,5 @@ function showBusinessMessage(message){
     }
 }
 console.log(
-    "WARDEAL BUSINESS v0.4.0 READY"
+    "WARDEAL BUSINESS v2.2 READY"
 );

@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.1.0
+   WARDEAL v2.0
    חנות ציוד
    נשק -> כוח התקפה (power)
    שריון/בגדים -> הגנה (defense)
@@ -87,7 +87,7 @@ function buyWeapon(id){
         showMessageSafeShop(
             weapon.currency === "diamonds"
             ? "💎 אין מספיק יהלומים"
-            : "🥇 אין מספיק זהב"
+            : "🪎 אין מספיק זהב"
         );
         return false;
     }
@@ -130,7 +130,7 @@ function buyArmor(id){
         showMessageSafeShop(
             armor.currency === "diamonds"
             ? "💎 אין מספיק יהלומים"
-            : "🥇 אין מספיק זהב"
+            : "🪎 אין מספיק זהב"
         );
         return false;
     }
@@ -173,7 +173,7 @@ function buyVehicle(id){
         showMessageSafeShop(
             vehicle.currency === "diamonds"
             ? "💎 אין מספיק יהלומים"
-            : "🥇 אין מספיק זהב"
+            : "🪎 אין מספיק זהב"
         );
         return false;
     }
@@ -372,5 +372,5 @@ function showMessageSafeShop(message){
     }
 }
 console.log(
-    "WARDEAL SHOP v0.1.0 READY"
+    "WARDEAL SHOP v2.0 READY"
 );

@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.4.0
+   WARDEAL v2.0
    Recruitment System
    8 סוגי יחידות + שדרוג רמות (כוח + הגנה)
    player.unitsPower עוקב אחרי הכוח שהגיע
@@ -84,13 +84,23 @@ function recruitUnit(type = "soldier") {
     );
     return false;
   }
-  if (player.money < unit.cost) {
+  if(!player.recruitCounts || typeof player.recruitCounts !== "object"){
+    player.recruitCounts = {};
+  }
+  const owned =
+    player.recruitCounts[type] || 0;
+  // עלות עולה ב-12% על כל יחידה נוספת מאותו סוג שכבר בשירות -
+  // מונע ערימת כוח בלתי מוגבלת מגיוס מסיבי
+  const cost =
+    Math.ceil(unit.cost * Math.pow(1.12, owned));
+  if (player.money < cost) {
     showMessage(
       "אין מספיק כסף לגיוס"
     );
     return false;
   }
-  player.money -= unit.cost;
+  player.money -= cost;
+  player.recruitCounts[type] = owned + 1;
   if(typeof dailyAddProgress === "function") dailyAddProgress("unitsRecruited", 1);
   if (player.side === "police") {
     player.policeUnits++;
@@ -112,7 +122,7 @@ function recruitUnit(type = "soldier") {
   }
   addXP(unit.xp);
   showMessage(
-    `👥 גויסה ${unit.name} (+${unit.power} כוח${unit.defense ? ", +" + unit.defense + " הגנה" : ""})`
+    `👥 גויסה ${unit.name} (+${unit.power} כוח${unit.defense ? ", +" + unit.defense + " הגנה" : ""}) | עלות: ₪${cost.toLocaleString()}`
   );
   saveGame();
   updateUI();
@@ -190,6 +200,15 @@ function upgradeRecruit(type){
         }
     }
     return true;
+}
+// ==========================================
+// עלות גיוס נוכחית ליחידה (עולה עם הכמות שכבר בשירות)
+// ==========================================
+function getRecruitCost(type){
+  const unit = RECRUIT_TYPES[type];
+  if(!unit) return 0;
+  const owned = (player && player.recruitCounts && player.recruitCounts[type]) || 0;
+  return Math.ceil(unit.cost * Math.pow(1.12, owned));
 }
 // ==========================================
 // תאימות לקוד ישן

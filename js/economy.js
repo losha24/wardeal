@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.3.1
+   WARDEAL v2.1
    Economy System
    Passive Income (+ legacy JOBS/work())
    ------------------------------------------
@@ -157,5 +157,5 @@ function workJob(jobIndex = 0) {
   return work(jobIndex);
 }
 console.log(
-  "WARDEAL ECONOMY v0.3.1 READY"
+  "WARDEAL ECONOMY v2.0 READY"
 );

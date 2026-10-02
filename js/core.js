@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.3.2
+   WARDEAL v2.1
    Core Game Engine
    Stable Runtime + Offline Support
 ========================================== */
@@ -30,7 +30,7 @@ function startGameEngine(){
     15000
     );
     console.log(
-        "WARDEAL ENGINE v0.3.2 STARTED"
+        "WARDEAL ENGINE v2.0 STARTED"
     );
 }
 // ==========================================
@@ -168,9 +168,15 @@ function updatePassiveIncome(){
     if(typeof player.money !== "number"){
         player.money = 0;
     }
-    player.money += Math.floor(
-        passive / 60
-    );
+    // שומרים שבר של הכנסה כדי שלא נאבד הכנסה כאשר היא נמוכה מ-₪1 לשנייה.
+    const previousRemainder = Number(player.passiveIncomeRemainder || 0);
+    const exactPerSecond = passive / 60;
+    const total = previousRemainder + exactPerSecond;
+    const wholeMoney = Math.floor(total);
+    player.passiveIncomeRemainder = total - wholeMoney;
+    if(wholeMoney > 0){
+        player.money += wholeMoney;
+    }
 }
 // ==========================================
 // מצב מנוע
@@ -374,5 +380,5 @@ function onGameLoaded(){
     }
 }
 console.log(
-    "WARDEAL CORE v0.3.2 READY"
+    "WARDEAL CORE v2.0 READY"
 );

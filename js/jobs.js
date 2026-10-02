@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.4.0
+   WARDEAL v2.4
    Job System
    העבודות הפעילות נשמרות כעת בתוך אובייקט
    השחקן (player.activeJobs) - חלק מהשמירה
@@ -232,12 +232,19 @@ function startJob(id){
         return;
     }
     player.energy -= job.energy;
+    // תגמול הכסף והזהב גדל לפי רמת השחקן - נקבע בזמן ההתחלה
+    const jobRewardMultiplier =
+    typeof getRewardLevelMultiplier === "function"
+    ?
+    getRewardLevelMultiplier()
+    :
+    1;
     activeJobs.push({
         id:job.id,
         name:job.name,
-        money:job.money,
+        money:Math.round((job.money || 0) * jobRewardMultiplier),
         xp:job.xp,
-        gold:job.gold || 0,
+        gold:Math.round((job.gold || 0) * jobRewardMultiplier),
         diamonds:job.diamonds || 0,
         blackMoney:job.blackMoney || 0,
         start:Date.now(),
@@ -372,7 +379,7 @@ function updateJobs(silent){
                 "✅ "+
                 job.name+
                 " הסתיימה" +
-                (job.gold > 0 ? " (+"+job.gold+" 🥇)" : "") +
+                (job.gold > 0 ? " (+"+job.gold+" 🪎)" : "") +
                 (job.diamonds > 0 ? " (+"+job.diamonds+" 💎)" : "") +
                 (job.blackMoney > 0 ? " (+"+job.blackMoney+" 🖤)" : "")
                 );
@@ -389,5 +396,5 @@ function updateJobs(silent){
     return completed;
 }
 console.log(
-"WARDEAL JOBS v0.4.0 READY"
+"WARDEAL JOBS v2.2 READY"
 );

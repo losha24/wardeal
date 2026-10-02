@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.4.0
+   WARDEAL v2.2
    Real Estate System
    8 נכסים, XP וכסף תואמים במדויק למוצג ב-UI
 ========================================== */
@@ -228,52 +228,133 @@ function upgradeProperty(index){
     return true;
 }
 // ==========================================
-// שדרוג מיוחד בכסף שחור (חד-פעמי לכל נכס)
+// שדרוג מיוחד לנכס - עד 10 רמות
+// עלות: כסף שחור + יהלומים
 // ==========================================
-function buyPropertySpecialUpgrade(index){
-    if(
-        !player ||
-        !Array.isArray(player.properties)
-    ){
-        return false;
+const PROPERTY_SPECIAL_MAX_LEVEL = 10;
+
+function getPropertySpecialUpgradeInfo(index){
+    if(!player || !Array.isArray(player.properties)) return null;
+    const property = player.properties[index];
+    if(!property) return null;
+
+    const definition = PROPERTY_LIST.find(p => p.id === property.id);
+    if(!definition) return null;
+
+    let currentLevel = Number(property.specialUpgradeLevel || 0);
+
+    // תאימות לשמירות ישנות
+    if(currentLevel < 1 && property.specialUpgrade === true){
+        currentLevel = 1;
+        property.specialUpgradeLevel = 1;
     }
-    const property =
-    player.properties[index];
-    if(!property){
-        return false;
-    }
-    if(property.specialUpgrade === true){
-        showMessageSafe("🖤 כבר בוצע שדרוג מיוחד לנכס זה");
-        return false;
-    }
-    const definition =
-    PROPERTY_LIST.find(p => p.id === property.id);
-    const cost =
-    definition && typeof definition.specialUpgradeCost === "number"
-    ?
-    definition.specialUpgradeCost
-    :
-    50;
-    const bonus =
-    definition && typeof definition.specialUpgradeBonus === "number"
-    ?
-    definition.specialUpgradeBonus
-    :
-    50;
-    if((player.blackMoney || 0) < cost){
-        showMessageSafe("🖤 אין מספיק כסף שחור לשדרוג המיוחד");
-        return false;
-    }
-    player.blackMoney -= cost;
-    property.income += bonus;
-    property.specialUpgrade = true;
-    showMessageSafe(
-        "🖤 שדרוג מיוחד בוצע ל-" + property.name +
-        " (+" + bonus + " ₪/דקה לצמיתות)"
+
+    currentLevel = Math.max(
+        0,
+        Math.min(PROPERTY_SPECIAL_MAX_LEVEL, Math.floor(currentLevel))
     );
+
+    if(currentLevel >= PROPERTY_SPECIAL_MAX_LEVEL){
+        return {
+            currentLevel,
+            nextLevel: PROPERTY_SPECIAL_MAX_LEVEL,
+            maxed: true,
+            blackCost: 0,
+            diamondCost: 0,
+            bonus: 0
+        };
+    }
+
+    const nextLevel = currentLevel + 1;
+    const baseBlack = Number(definition.specialUpgradeCost || 50);
+    const baseBonus = Number(definition.specialUpgradeBonus || 50);
+
+    // כל רמה מייקרת את השדרוג ב-45%
+    const blackCost = Math.max(
+        1,
+        Math.ceil(baseBlack * Math.pow(1.45, currentLevel))
+    );
+
+    // 1-4 יהלומים בהתאם למחיר הנכס ולרמת השדרוג
+    const diamondCost = Math.max(
+        1,
+        Math.ceil((Number(definition.price) || 50000) / 1000000)
+        + Math.floor(currentLevel / 2)
+    );
+
+    // הבונוס גדל ב-35% בכל רמה
+    const bonus = Math.max(
+        1,
+        Math.floor(baseBonus * Math.pow(1.35, currentLevel))
+    );
+
+    return {
+        currentLevel,
+        nextLevel,
+        maxed: false,
+        blackCost,
+        diamondCost,
+        bonus
+    };
+}
+
+function buyPropertySpecialUpgrade(index){
+    if(!player || !Array.isArray(player.properties)) return false;
+
+    const property = player.properties[index];
+    if(!property) return false;
+
+    const info = getPropertySpecialUpgradeInfo(index);
+    if(!info){
+        showMessageSafe("🏠 נתוני השדרוג המיוחד לא נמצאו");
+        return false;
+    }
+
+    if(info.maxed){
+        showMessageSafe(
+            "⭐ הנכס כבר ברמת השדרוג המיוחד המקסימלית — רמה " +
+            PROPERTY_SPECIAL_MAX_LEVEL
+        );
+        return false;
+    }
+
+    if((player.blackMoney || 0) < info.blackCost){
+        showMessageSafe(
+            "🖤 אין מספיק כסף שחור. נדרש " +
+            info.blackCost.toLocaleString()
+        );
+        return false;
+    }
+
+    if((player.diamonds || 0) < info.diamondCost){
+        showMessageSafe(
+            "💎 אין מספיק יהלומים. נדרש " +
+            info.diamondCost
+        );
+        return false;
+    }
+
+    player.blackMoney -= info.blackCost;
+    player.diamonds -= info.diamondCost;
+
+    property.income =
+        Number(property.income || 0) + info.bonus;
+
+    property.specialUpgradeLevel = info.nextLevel;
+    property.specialUpgrade = info.nextLevel >= 1;
+
+    showMessageSafe(
+        "⭐ " + property.name +
+        " שודרג במיוחד לרמה " + info.nextLevel +
+        " | +" + info.bonus.toLocaleString() +
+        " ₪/דקה | 🖤 -" + info.blackCost.toLocaleString() +
+        " | 💎 -" + info.diamondCost
+    );
+
     saveUpdate();
     return true;
 }
+
 // ==========================================
 // רשימת נכסים לרכישה
 // ==========================================
@@ -336,5 +417,5 @@ function showMessageSafe(message){
     }
 }
 console.log(
-    "WARDEAL PROPERTY v0.4.0 READY"
+    "WARDEAL PROPERTY v2.2 READY"
 );

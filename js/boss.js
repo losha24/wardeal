@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.1.0
+   WARDEAL v2.4
    מערכת בוסים
    כוח והגנה של הבוס נגזרים מרמת השחקן.
    הגנת השחקן מפחיתה נזק בהפסד (לא משפיעה
@@ -185,6 +185,26 @@ function getBossCombatStats(boss){
 // ==========================================
 // עזר: חישוב סף הקושי של בוס לפי רמת השחקן
 // ==========================================
+// ==========================================
+// טווח תגמולים בפועל של בוס - גדל לפי רמת השחקן
+// ==========================================
+function getBossRewardRange(boss){
+    if(!boss){
+        return {blackMoneyMin:0, blackMoneyMax:0, diamondsMin:0, diamondsMax:0};
+    }
+    const multiplier =
+    typeof getRewardLevelMultiplier === "function"
+    ?
+    getRewardLevelMultiplier()
+    :
+    1;
+    return {
+        blackMoneyMin: Math.max(1, Math.round(boss.rewardBlackMoneyMin * multiplier)),
+        blackMoneyMax: Math.max(1, Math.round(boss.rewardBlackMoneyMax * multiplier)),
+        diamondsMin: Math.max(boss.rewardDiamondsMin, Math.round(boss.rewardDiamondsMin * multiplier)),
+        diamondsMax: Math.max(boss.rewardDiamondsMax, Math.round(boss.rewardDiamondsMax * multiplier))
+    };
+}
 function getBossThreshold(boss){
     if(!player || !boss){
         return 0;
@@ -294,14 +314,15 @@ function attackBoss(bossId){
     const effectiveThreshold =
     threshold * variance;
     if(attackPower >= effectiveThreshold){
+        const rewardRange = getBossRewardRange(boss);
         const blackMoney =
         Math.floor(
-            Math.random() * (boss.rewardBlackMoneyMax - boss.rewardBlackMoneyMin + 1)
-        ) + boss.rewardBlackMoneyMin;
+            Math.random() * (rewardRange.blackMoneyMax - rewardRange.blackMoneyMin + 1)
+        ) + rewardRange.blackMoneyMin;
         const diamonds =
         Math.floor(
-            Math.random() * (boss.rewardDiamondsMax - boss.rewardDiamondsMin + 1)
-        ) + boss.rewardDiamondsMin;
+            Math.random() * (rewardRange.diamondsMax - rewardRange.diamondsMin + 1)
+        ) + rewardRange.diamondsMin;
         if(typeof player.blackMoney !== "number"){
             player.blackMoney = 0;
         }
@@ -434,5 +455,5 @@ function attackBoss(bossId){
     return true;
 }
 console.log(
-    "WARDEAL BOSS v0.1.0 READY"
+    "WARDEAL BOSS v2.2 READY"
 );

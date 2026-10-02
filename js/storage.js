@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.3.3
+   WARDEAL v2.4
    Local Storage System
    Safe Save + Migration + Repair + Offline
 ========================================== */
@@ -8,7 +8,7 @@ const WARDEAL_SAVE_KEY =
 const WARDEAL_BACKUP_KEY =
     "WARDEAL_PLAYER_BACKUP";
 const WARDEAL_VERSION =
-    "0.3.3";
+    "2.4";
 // ==========================================
 // תיקון נתוני שחקן
 // (הפונקציה עצמה נמצאת ב-player.js
@@ -327,5 +327,5 @@ window.addEventListener(
     }
 );
 console.log(
-    "WARDEAL STORAGE v0.3.3 READY"
+    "WARDEAL STORAGE v2.4 READY"
 );

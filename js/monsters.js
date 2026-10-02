@@ -1,9 +1,10 @@
 /* ==========================================
-   WARDEAL v0.1.0
+   WARDEAL v2.4
    קרבות מיוחדים - מפלצות
    10 מפלצות, קושי גדל לפי רמה, ללא קירור -
    רק עלות אנרגיה. פרסים: כסף שחור + יהלומים,
    וסיכוי קטן לשלל ציוד בלעדי.
+   התגמולים גדלים לפי רמת השחקן.
    שונות מוטה 60/40 לטובת ניצחון כשהכוח תואם.
 ========================================== */
 const MONSTERS = [
@@ -47,8 +48,29 @@ function getMonsterList(){
     return MONSTERS.map((monster, index) => {
         const unlock = Math.max(1, monster.minLevel || 1);
         const scaledDifficulty = monster.difficulty * (1 + Math.max(0, level - unlock) * 0.035);
-        return { ...monster, index, scaledDifficulty, locked: level < unlock };
+        const rewardRange = getMonsterRewardRange(monster);
+        return { ...monster, index, scaledDifficulty, locked: level < unlock, rewardRange };
     });
+}
+// ==========================================
+// טווח תגמולים בפועל של מפלצת - גדל לפי רמת השחקן
+// ==========================================
+function getMonsterRewardRange(monster){
+    if(!monster){
+        return {blackMoneyMin:0, blackMoneyMax:0, diamondsMin:0, diamondsMax:0};
+    }
+    const multiplier =
+    typeof getRewardLevelMultiplier === "function"
+    ?
+    getRewardLevelMultiplier()
+    :
+    1;
+    return {
+        blackMoneyMin: Math.max(1, Math.round(monster.blackMoneyMin * multiplier)),
+        blackMoneyMax: Math.max(1, Math.round(monster.blackMoneyMax * multiplier)),
+        diamondsMin: monster.diamondsMax > 0 ? Math.max(monster.diamondsMin, Math.round(monster.diamondsMin * multiplier)) : 0,
+        diamondsMax: monster.diamondsMax > 0 ? Math.max(monster.diamondsMax, Math.round(monster.diamondsMax * multiplier)) : 0
+    };
 }
 // ==========================================
 // תקיפת מפלצת - ללא קירור, רק עלות אנרגיה
@@ -89,11 +111,12 @@ function attackMonster(monsterIndex){
     const monsterPower =
     Math.max(1, monsterPowerBase * variance);
     if(attackPower >= monsterPower){
+        const rewardRange = getMonsterRewardRange(monster);
         const blackMoney =
-        Math.floor(Math.random() * (monster.blackMoneyMax - monster.blackMoneyMin + 1)) + monster.blackMoneyMin;
+        Math.floor(Math.random() * (rewardRange.blackMoneyMax - rewardRange.blackMoneyMin + 1)) + rewardRange.blackMoneyMin;
         const diamonds =
-        monster.diamondsMax > 0
-        ? Math.floor(Math.random() * (monster.diamondsMax - monster.diamondsMin + 1)) + monster.diamondsMin
+        rewardRange.diamondsMax > 0
+        ? Math.floor(Math.random() * (rewardRange.diamondsMax - rewardRange.diamondsMin + 1)) + rewardRange.diamondsMin
         : 0;
         if(typeof player.blackMoney !== "number"){
             player.blackMoney = 0;
@@ -205,7 +228,7 @@ function renderMonsterList(content){
             <p>${monster.desc}</p>
             <div class="battleMeta">💪 כוח <b>${monsterPowerBase}</b></div>
             <div class="battleMeta">🔓 ${monster.locked ? `נפתח ברמה ${monster.minLevel}` : `רמה ${monster.minLevel}+`}</div>
-            <div class="battleMeta">🖤 ${monster.blackMoneyMin}-${monster.blackMoneyMax}${monster.diamondsMax > 0 ? " · 💎 " + monster.diamondsMin + "-" + monster.diamondsMax : ""}</div>
+            <div class="battleMeta">🖤 ${monster.rewardRange.blackMoneyMin}-${monster.rewardRange.blackMoneyMax}${monster.rewardRange.diamondsMax > 0 ? " · 💎 " + monster.rewardRange.diamondsMin + "-" + monster.rewardRange.diamondsMax : ""}</div>
             <button
             class="battleFightBtn"
             ${disabled ? "disabled" : ""}

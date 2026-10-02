@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.3.2
+   WARDEAL v2.4
    Player System
    Stable Save Compatibility
 ========================================== */
@@ -22,6 +22,7 @@ const DEFAULT_PLAYER = {
     unitsPower: 0,
     unitsDefense: 0,
     unitTraining: {},
+    recruitCounts: {},
     defense: 5,
     speed: 0,
     policeUnits: 0,
@@ -37,10 +38,15 @@ const DEFAULT_PLAYER = {
     lastSave: 0,
     totalWins: 0,
     lastGiftClaim: 0,
+    passiveIncomeRemainder: 0,
     bribeWindowStart: 0,
     bribeCount: 0,
     convertWindowStart: 0,
     convertCount: 0,
+    diamondConvertWindowStart: 0,
+    diamondConvertCount: 0,
+    diamondConvertPrice: 0,
+    rewardGrowthMultiplier: 1,
     hospitalUntil: 0,
     bossCooldowns: {},
     bossLoot: [],
@@ -142,6 +148,15 @@ function repairPlayerData(data){
     ){
         fixed.unitTraining = {};
     }
+    if(
+        !fixed.recruitCounts
+        ||
+        typeof fixed.recruitCounts !== "object"
+        ||
+        Array.isArray(fixed.recruitCounts)
+    ){
+        fixed.recruitCounts = {};
+    }
     if(!Array.isArray(fixed.properties)){
         fixed.properties = [];
     }
@@ -152,6 +167,17 @@ function repairPlayerData(data){
         fixed.activeJobs = [];
     }
     if(!fixed.dailyMissions || typeof fixed.dailyMissions !== "object") fixed.dailyMissions = null;
+    // תאימות לשמירות ישנות: אם אין ערך שמור למכפיל התגמולים
+    // (פיצ'ר חדש) ניתן הערכה סבירה לפי הרמה הנוכחית, במקום
+    // לאפס אותו ל-1 ולפגוע בשחקנים שכבר עלו רמות
+    if(
+        typeof data.rewardGrowthMultiplier !== "number"
+        ||
+        data.rewardGrowthMultiplier <= 0
+    ){
+        const lvl = Math.max(1, Math.floor(Number(fixed.level) || 1));
+        fixed.rewardGrowthMultiplier = Math.pow(1.15, lvl - 1);
+    }
     const numbers = [
         "level",
         "xp",
@@ -170,10 +196,13 @@ function repairPlayerData(data){
         "speed",
         "totalWins",
         "lastGiftClaim",
+        "passiveIncomeRemainder",
         "bribeWindowStart",
         "bribeCount",
         "convertWindowStart",
         "convertCount",
+        "diamondConvertWindowStart",
+        "diamondConvertCount",
         "hospitalUntil",
         "defense",
         "policeUnits",
@@ -264,6 +293,10 @@ function checkLevelUp(){
                 player.diamonds = 0;
             }
             player.diamonds += 1;
+        }
+        // גידול אקראי (1%-30%) במכפיל התגמולים הכללי - פעם אחת לכל רמה
+        if(typeof rollRewardGrowthForLevelUp === "function"){
+            rollRewardGrowthForLevelUp();
         }
         leveled = true;
     }
@@ -383,8 +416,39 @@ function recoverHealth(){
         player.health = player.maxHealth;
     }
 }
+// ==========================================
+// מכפיל תגמולים כללי - משותף לכל המערכות
+// (עבודות, משימות, פעולות מיוחדות, מבצע גבייה, בוסים ומפלצות)
+// לא נוסחה קבועה יותר: בכל עליית רמה מתגלגל אחוז אקראי
+// בין 1% ל-30% (ראה rollRewardGrowthForLevelUp למטה),
+// והמכפיל המצטבר נשמר על השחקן (player.rewardGrowthMultiplier)
+// כדי שיהיה עקבי בכל מקום שבו הוא נבדק.
+// ==========================================
+function getRewardLevelMultiplier(){
+    if(
+        player &&
+        typeof player.rewardGrowthMultiplier === "number" &&
+        player.rewardGrowthMultiplier > 0
+    ){
+        return player.rewardGrowthMultiplier;
+    }
+    return 1;
+}
+// ==========================================
+// גלגול הגידול האקראי לרמה בודדת (1%-30%)
+// נקרא פעם אחת בדיוק על כל רמה שעולה, מתוך checkLevelUp
+// ==========================================
+function rollRewardGrowthForLevelUp(){
+    if(!player) return;
+    if(typeof player.rewardGrowthMultiplier !== "number" || player.rewardGrowthMultiplier <= 0){
+        player.rewardGrowthMultiplier = 1;
+    }
+    const growth = 0.01 + Math.random() * 0.29; // בין 1% ל-30%
+    player.rewardGrowthMultiplier =
+    player.rewardGrowthMultiplier * (1 + growth);
+}
 console.log(
-    "WARDEAL PLAYER v0.3.2 READY"
+    "WARDEAL PLAYER v2.4 READY"
 );
 // ==========================================
 // בית חולים - נעילה כשגומרים חיים

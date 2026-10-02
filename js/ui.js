@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.3.3
+   WARDEAL v2.4
    User Interface System
    Compact Stats + Progress Bars
 ========================================== */
@@ -363,11 +363,21 @@ function renderWork(content){
     <h4>📋 עבודות זמינות (${activeIds.length}/${maxSlots})</h4>
     <div class="optionGrid">
     `;
+    const jobRewardMultiplier =
+    typeof getRewardLevelMultiplier === "function"
+    ?
+    getRewardLevelMultiplier()
+    :
+    1;
     jobsList.forEach(job=>{
         const isRunning =
         activeIds.includes(job.id);
         const disabled =
         isRunning || slotsFull;
+        const displayMoney =
+        Math.round((job.money || 0) * jobRewardMultiplier);
+        const displayGold =
+        Math.round((job.gold || 0) * jobRewardMultiplier);
         html += `
         <button
         class="optionCard"
@@ -375,12 +385,12 @@ function renderWork(content){
         onclick="startJob('${job.id}')">
         💼 ${job.name}
         <br>
-        💰 ₪${job.money}
+        💰 ₪${displayMoney.toLocaleString()}
         <br>
         ⭐ ${job.xp} XP
         <br>
         ⚡ ${job.energy} | ⏱️ ${job.time} שנ'
-        ${job.gold ? `<br>🥇 +${job.gold}` : ""}${job.diamonds ? ` 💎 +${job.diamonds}` : ""}${job.blackMoney ? ` 🖤 +${job.blackMoney}` : ""}
+        ${displayGold ? `<br>🪎 +${displayGold}` : ""}${job.diamonds ? ` 💎 +${job.diamonds}` : ""}${job.blackMoney ? ` 🖤 +${job.blackMoney}` : ""}
         ${isRunning ? "<br>🔄 פעילה" : ""}
         </button>
         `;
@@ -411,19 +421,21 @@ function renderRecruit(content){
     `;
     Object.keys(RECRUIT_TYPES).forEach(key=>{
         const unit = RECRUIT_TYPES[key];
+        const owned = (player.recruitCounts && player.recruitCounts[key]) || 0;
+        const cost = typeof getRecruitCost === "function" ? getRecruitCost(key) : unit.cost;
         html += `
         <div class="ownedCard">
             <div class="ownedCardName">
                 ${unit.icon || "👤"} ${unit.name}
-                <span class="ownedCardLevel">אימון רמה ${(player.unitTraining && player.unitTraining[key]) || 1}</span>
+                <span class="ownedCardLevel">בשירות: ${owned} | אימון רמה ${(player.unitTraining && player.unitTraining[key]) || 1}</span>
             </div>
             <div class="ownedCardRow">
-                💰 ₪${unit.cost} לגיוס | 💪 +${unit.power} כוח${unit.defense ? " | 🛡️ +" + unit.defense + " הגנה" : ""} | ⭐ ${unit.xp} XP
+                💰 ₪${cost.toLocaleString()} לגיוס | 💪 +${unit.power} כוח${unit.defense ? " | 🛡️ +" + unit.defense + " הגנה" : ""} | ⭐ ${unit.xp} XP
             </div>
             <button
             class="upgradeBtn"
             style="margin-bottom:6px"
-            ${player.money < unit.cost ? "disabled" : ""}
+            ${player.money < cost ? "disabled" : ""}
             onclick="recruitUnit('${key}')">
                 👥 גייס יחידה נוספת
             </button>
@@ -484,18 +496,22 @@ function renderProperties(content){
             property.upgradeXp
             :
             50;
+            const specialInfo =
+            typeof getPropertySpecialUpgradeInfo === "function"
+            ?
+            getPropertySpecialUpgradeInfo(index)
+            :
+            null;
             const specialCost =
-            typeof property.specialUpgradeCost === "number"
-            ?
-            property.specialUpgradeCost
-            :
-            50;
+            specialInfo ? specialInfo.blackCost : 0;
+            const specialDiamondCost =
+            specialInfo ? specialInfo.diamondCost : 0;
             const specialBonus =
-            typeof property.specialUpgradeBonus === "number"
-            ?
-            property.specialUpgradeBonus
-            :
-            50;
+            specialInfo ? specialInfo.bonus : 0;
+            const specialLevel =
+            specialInfo ? specialInfo.currentLevel : 0;
+            const specialMaxed =
+            specialInfo ? specialInfo.maxed === true : false;
             html += `
             <div class="ownedCard">
                 <div class="ownedCardName">
@@ -511,18 +527,14 @@ function renderProperties(content){
                 onclick="upgradeProperty(${index})">
                     ⬆️ שדרג | ₪${upgradeCost} | +₪${property.upgradeIncome || 0}/דקה | +${upgradeXp} XP
                 </button>
-                ${
-                    property.specialUpgrade === true
-                    ?
-                    `<div class="specialUpgradeBadge">🖤 שודרג במיוחד</div>`
-                    :
-                    `<button
+                <button
                     class="upgradeBtn blackUpgradeBtn"
-                    ${(player.blackMoney || 0) < specialCost ? "disabled" : ""}
+                    ${specialMaxed || (player.blackMoney || 0) < specialCost || (player.diamonds || 0) < specialDiamondCost ? "disabled" : ""}
                     onclick="buyPropertySpecialUpgrade(${index})">
-                        🖤 שדרוג מיוחד | ${specialCost} 🖤 | +₪${specialBonus} לצמיתות
-                    </button>`
-                }
+                    ${specialMaxed
+                        ? "⭐ שדרוג מיוחד מקסימלי — רמה " + PROPERTY_SPECIAL_MAX_LEVEL
+                        : "⭐ שדרוג מיוחד רמה " + (specialLevel + 1) + "/" + PROPERTY_SPECIAL_MAX_LEVEL + " | 🖤 " + specialCost.toLocaleString() + " | 💎 " + specialDiamondCost + " | +" + specialBonus.toLocaleString() + " ₪/דקה"}
+                </button>
             </div>
             `;
         });
@@ -607,18 +619,22 @@ function renderBusiness(content){
             business.upgradeXp
             :
             100;
+            const specialInfo =
+            typeof getBusinessSpecialUpgradeInfo === "function"
+            ?
+            getBusinessSpecialUpgradeInfo(index)
+            :
+            null;
             const specialCost =
-            typeof business.specialUpgradeCost === "number"
-            ?
-            business.specialUpgradeCost
-            :
-            50;
+            specialInfo ? specialInfo.blackCost : 0;
+            const specialDiamondCost =
+            specialInfo ? specialInfo.diamondCost : 0;
             const specialBonus =
-            typeof business.specialUpgradeBonus === "number"
-            ?
-            business.specialUpgradeBonus
-            :
-            50;
+            specialInfo ? specialInfo.bonus : 0;
+            const specialLevel =
+            specialInfo ? specialInfo.currentLevel : 0;
+            const specialMaxed =
+            specialInfo ? specialInfo.maxed === true : false;
             html += `
             <div class="ownedCard">
                 <div class="ownedCardName">
@@ -634,18 +650,14 @@ function renderBusiness(content){
                 onclick="upgradeBusiness(${index})">
                     ⬆️ שדרג | ₪${upgradeCost} | +₪${business.upgradeIncome || 0}/דקה | +${upgradeXp} XP
                 </button>
-                ${
-                    business.specialUpgrade === true
-                    ?
-                    `<div class="specialUpgradeBadge">🖤 שודרג במיוחד</div>`
-                    :
-                    `<button
+                <button
                     class="upgradeBtn blackUpgradeBtn"
-                    ${(player.blackMoney || 0) < specialCost ? "disabled" : ""}
+                    ${specialMaxed || (player.blackMoney || 0) < specialCost || (player.diamonds || 0) < specialDiamondCost ? "disabled" : ""}
                     onclick="buyBusinessSpecialUpgrade(${index})">
-                        🖤 שדרוג מיוחד | ${specialCost} 🖤 | +₪${specialBonus} לצמיתות
-                    </button>`
-                }
+                    ${specialMaxed
+                        ? "⭐ שדרוג מיוחד מקסימלי — רמה " + BUSINESS_SPECIAL_MAX_LEVEL
+                        : "⭐ שדרוג מיוחד רמה " + (specialLevel + 1) + "/" + BUSINESS_SPECIAL_MAX_LEVEL + " | 🖤 " + specialCost.toLocaleString() + " | 💎 " + specialDiamondCost + " | +" + specialBonus.toLocaleString() + " ₪/דקה"}
+                </button>
             </div>
             `;
         });
@@ -731,7 +743,7 @@ function renderHospital(content){
     class="optionCard"
     ${(player.gold || 0) < costs.gold ? "disabled" : ""}
     onclick="payToSkipHospital('gold')">
-        🥇 שלם ${costs.gold} זהב
+        🪎 שלם ${costs.gold} זהב
     </button>
     <button
     class="optionCard"
@@ -856,6 +868,10 @@ function renderBossList(content){
         typeof getBossCombatStats === "function"
         ? getBossCombatStats(boss)
         : {power:threshold, defense:0};
+        const bossRewardRange =
+        typeof getBossRewardRange === "function"
+        ? getBossRewardRange(boss)
+        : {blackMoneyMin:boss.rewardBlackMoneyMin, blackMoneyMax:boss.rewardBlackMoneyMax, diamondsMin:boss.rewardDiamondsMin, diamondsMax:boss.rewardDiamondsMax};
         const hasLoot =
         Array.isArray(player.bossLoot) &&
         player.bossLoot.find(l=>l.bossId===boss.id);
@@ -875,7 +891,7 @@ function renderBossList(content){
                 ${boss.desc}
                 <br>
                 💪 כוח ${bossStats.power} | 🛡️ הגנה ${bossStats.defense}
-                <br>🖤 ${boss.rewardBlackMoneyMin}-${boss.rewardBlackMoneyMax} | 💎 ${boss.rewardDiamondsMin}-${boss.rewardDiamondsMax}
+                <br>🖤 ${bossRewardRange.blackMoneyMin}-${bossRewardRange.blackMoneyMax} | 💎 ${bossRewardRange.diamondsMin}-${bossRewardRange.diamondsMax}
                 ${hasLoot ? " | ✅ שלל כבר התקבל" : " | 🎁 " + Math.round(boss.lootChance*100) + "% לשלל בלעדי"}
             </div>
             <button
@@ -1034,7 +1050,7 @@ function renderShop(content){
         <div class="contentCard shopCard">
             <h3>🛒 חנות WARDEAL</h3>
             <p class="cityNoNews shopBalance">
-                🥇 ${player.gold || 0} &nbsp; 💎 ${player.diamonds || 0} &nbsp; 🖤 ${player.blackMoney || 0}
+                🪎 ${player.gold || 0} &nbsp; 💎 ${player.diamonds || 0} &nbsp; 🖤 ${player.blackMoney || 0}
             </p>
             ${categoryButtons}
     `;
@@ -1063,7 +1079,7 @@ function buildShopSection(title, list, ownedList, buyFn, statKey, statLabel, upg
             const level = item.level || 1;
             const upgradeCost = level * Math.max(1, Math.ceil((definition ? definition.cost : 20) * 0.8));
             const upgradeBonus = Math.max(1, Math.ceil((definition ? definition[statKey] : item[statKey]) * 0.2));
-            const currencyIcon = definition && definition.currency === "diamonds" ? "💎" : (definition && definition.currency === "blackMoney" ? "🖤" : "🥇");
+            const currencyIcon = definition && definition.currency === "diamonds" ? "💎" : (definition && definition.currency === "blackMoney" ? "🖤" : "🪎");
             const affordable = definition ? (definition.currency === "diamonds" ? (player.diamonds || 0) >= upgradeCost : definition.currency === "blackMoney" ? (player.blackMoney || 0) >= upgradeCost : (player.gold || 0) >= upgradeCost) : false;
             html += `
                 <div class="ownedCard shopItemCard">
@@ -1085,7 +1101,7 @@ function buildShopSection(title, list, ownedList, buyFn, statKey, statLabel, upg
         html += `<div class="${gridClass || "shopGridTwo"} shopBuyGrid">`;
         availableToBuy.forEach(item=>{
             const affordable = typeof canAffordShopItem === "function" ? canAffordShopItem(item) : false;
-            const currencyIcon = item.currency === "diamonds" ? "💎" : (item.currency === "blackMoney" ? "🖤" : "🥇");
+            const currencyIcon = item.currency === "diamonds" ? "💎" : (item.currency === "blackMoney" ? "🖤" : "🪎");
             html += `
                 <button class="optionCard shopItemCard shopBuyCard" ${affordable ? "" : "disabled"} onclick="${buyFn}(${item.id})">
                     <div class="shopItemName">${item.name}</div>
@@ -1115,21 +1131,36 @@ function handleConvertClick(){
     }
 }
 // ==========================================
+// עטיפה: קריאת סכום המרת היהלומים משדה הקלט
+// ==========================================
+function handleDiamondConvertClick(){
+    const input =
+    document.getElementById("diamondConvertAmountInput");
+    if(!input){
+        return;
+    }
+    const amount =
+    parseInt(input.value, 10);
+    if(typeof convertMoneyToDiamonds === "function"){
+        convertMoneyToDiamonds(amount);
+    }
+}
+// ==========================================
 // מסך עזרה
 // ==========================================
 const HELP_SECTIONS = [
     { icon:"🏰", title:"תחנה", text:"לוח התחנה - נכסים, עסקים, יחידות והכנסה. ניתן לפתח את התחנה עד רמה 50 ולקבל בונוסים ומתנה." },
-    { icon:"🎯", title:"פעולות", text:"מתנה כל 4 שעות, גביית שוחד (10 פעמים/4 שעות), והמרת כסף לכסף שחור בהימור." },
+    { icon:"🎯", title:"פעולות", text:"מתנה כל 4 שעות, גביית שוחד (10 פעמים/4 שעות), המרת כסף ליהלומים (עד 10 פעמים/4 שעות), המרת כסף לכסף שחור בהימור (עד 5 פעמים/4 שעות), ו-8 מבצעים מיוחדים נוספים. כל התגמולים עולים ככל שהרמה עולה." },
     { icon:"💼", title:"עבודה", text:"עד 2 עבודות במקביל, כל אחת לוקחת זמן ונותנת כסף, XP, ולפעמים זהב/יהלומים/כסף שחור." },
     { icon:"👥", title:"צבא", text:"גיוס יחידות שמוסיפות כוח (וחלקן גם הגנה), ואפשר לשדרג אימון לכל סוג יחידה." },
-    { icon:"🏠", title:"נכסים", text:"קנייה, שדרוג רמה (מעלה הכנסה), ושדרוג מיוחד בכסף שחור לבונוס קבוע." },
-    { icon:"🏢", title:"עסקים", text:"בדיוק כמו נכסים, אבל תשואה קצת גבוהה יותר יחסית למחיר." },
+    { icon:"🏠", title:"נכסים", text:"קנייה, שדרוג רמה (מעלה הכנסה), ושדרוג מיוחד בכסף שחור ויהלומים לבונוס קבוע (עד "+PROPERTY_SPECIAL_MAX_LEVEL+" רמות)." },
+    { icon:"🏢", title:"עסקים", text:"בדיוק כמו נכסים (כולל שדרוג מיוחד עד "+BUSINESS_SPECIAL_MAX_LEVEL+" רמות), אבל תשואה קצת גבוהה יותר יחסית למחיר." },
     { icon:"⚔️", title:"קרב", text:"שוטרים נלחמים בעבריינים ולהפך. ניצחון נותן כסף וזהב. הפסד עלול לעלות חיים, זהב, כסף, ואפילו יחידה." },
     { icon:"🛒", title:"חנות", text:"נשק (כוח), שריון (הגנה), רכבים (מהירות) - קונים ומשדרגים רמה. חלק מהפריטים בזהב, חלק ביהלומים או בשוק שחור." }
 ];
 const CURRENCY_HELP = [
     { icon:"💵", title:"כסף", text:"המטבע הראשי - מעבודות, קרבות, הכנסה פסיבית." },
-    { icon:"🥇", title:"זהב", text:"מקרבות, מתנות, ושוחד. עולה לרוב פריטי החנות." },
+    { icon:"🪎", title:"זהב", text:"מקרבות, מתנות, ושוחד. עולה לרוב פריטי החנות." },
     { icon:"💎", title:"יהלומים", text:"נדירים - מרמות, אבני דרך בקרב, ומזל. לפריטים הכי חזקים." },
     { icon:"🖤", title:"כסף שחור", text:"משוחד, הימורים, ועבודות מתקדמות. לשוק שחור ולשדרוגים מיוחדים." }
 ];
@@ -1253,7 +1284,7 @@ function showWelcomeBackScreen(data){
             html += `
             <div class="welcomeBackRow">
                 <span>${job.name}</span>
-                <b>₪${job.money}${job.gold ? " +"+job.gold+"🥇" : ""}${job.diamonds ? " +"+job.diamonds+"💎" : ""}${job.blackMoney ? " +"+job.blackMoney+"🖤" : ""}</b>
+                <b>₪${job.money}${job.gold ? " +"+job.gold+"🪎" : ""}${job.diamonds ? " +"+job.diamonds+"💎" : ""}${job.blackMoney ? " +"+job.blackMoney+"🖤" : ""}</b>
             </div>
             `;
         });
@@ -1306,5 +1337,5 @@ function closeWelcomeBack(){
     }
 }
 console.log(
-    "WARDEAL UI v0.3.3 READY"
+    "WARDEAL UI v2.2 READY"
 );

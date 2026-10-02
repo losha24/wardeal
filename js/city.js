@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.1.0
+   WARDEAL v2.5
    מערכת עיר
    לוח מחוונים + חדשות ואירועים אקראיים
 ========================================== */
@@ -26,8 +26,8 @@ const CITY_EVENTS = [
     { text:"🕶️ עסקה חשאית הניבה רווח נאה", money:500, side:"criminal" },
     { text:"🚨 כמעט נתפסת - שוחד קטן נדרש", money:-300, side:"criminal" },
     // מציאות נדירות - זהב/יהלומים
-    { text:"🥇 מצאת מטבע זהב נדיר ברחוב", gold:8 },
-    { text:"🥇 עסקה קטנה שולמה לך בזהב", gold:12 },
+    { text:"🪎 מצאת מטבע זהב נדיר ברחוב", gold:8 },
+    { text:"🪎 עסקה קטנה שולמה לך בזהב", gold:12 },
     { text:"💎 מצאת יהלום נוצץ באשפה", diamonds:1 },
     { text:"💎 קיבלת יהלום כתשלום על שירות", diamonds:1 },
     // שוחד - כסף שחור, זמין לשני הצדדים
@@ -208,6 +208,8 @@ const BRIBE_MONEY_MIN = 100;
 const BRIBE_MONEY_MAX = 300;
 const BRIBE_BLACKMONEY_MIN = 5;
 const BRIBE_BLACKMONEY_MAX = 15;
+// סכום הגבייה גדל לפי מכפיל התגמולים המשותף (ראה getRewardLevelMultiplier
+// ב-player.js) - אחוז אקראי בין 1% ל-30% שמתגלגל בכל עליית רמה.
 const BRIBE_XP = 20;
 const BRIBE_WINDOW = 4 * 60 * 60 * 1000;
 const BRIBE_MAX_USES = 10;
@@ -242,6 +244,22 @@ function getBribeStatus(){
         resetText: hours + " שע' " + minutes + " דק'"
     };
 }
+function getBribeRewardMultiplier(){
+    return typeof getRewardLevelMultiplier === "function"
+        ? getRewardLevelMultiplier()
+        : 1;
+}
+
+function getBribeRewardRange(){
+    const multiplier = getBribeRewardMultiplier();
+    return {
+        moneyMin: Math.floor(BRIBE_MONEY_MIN * multiplier),
+        moneyMax: Math.floor(BRIBE_MONEY_MAX * multiplier),
+        blackMoneyMin: Math.max(1, Math.floor(BRIBE_BLACKMONEY_MIN * multiplier)),
+        blackMoneyMax: Math.max(1, Math.floor(BRIBE_BLACKMONEY_MAX * multiplier))
+    };
+}
+
 function collectBribe(){
     if(!player){
         return false;
@@ -271,14 +289,15 @@ function collectBribe(){
     player.energy -= BRIBE_ENERGY_COST;
     player.bribeCount = (player.bribeCount || 0) + 1;
     if(typeof dailyAddProgress === "function") dailyAddProgress("specialActions", 1);
+    const rewardRange = getBribeRewardRange();
     const money =
     Math.floor(
-        Math.random() * (BRIBE_MONEY_MAX - BRIBE_MONEY_MIN + 1)
-    ) + BRIBE_MONEY_MIN;
+        Math.random() * (rewardRange.moneyMax - rewardRange.moneyMin + 1)
+    ) + rewardRange.moneyMin;
     const blackMoney =
     Math.floor(
-        Math.random() * (BRIBE_BLACKMONEY_MAX - BRIBE_BLACKMONEY_MIN + 1)
-    ) + BRIBE_BLACKMONEY_MIN;
+        Math.random() * (rewardRange.blackMoneyMax - rewardRange.blackMoneyMin + 1)
+    ) + rewardRange.blackMoneyMin;
     let diamonds = 0;
     if(Math.random() < BRIBE_DIAMOND_CHANCE){
         diamonds = 1;
@@ -328,11 +347,13 @@ function collectBribe(){
 // המרת כסף רגיל לכסף שחור
 // סיכוי הצלחה עולה עם הסכום שמסתכנים בו
 // (1% בסכום המינימלי, עד 10% בסכום המקסימלי)
-// שיעור המרה בהצלחה: 200 כסף = 1 כסף שחור
-// מוגבל ל-4 פעמים בכל חלון של 4 שעות
+// שיעור המרה בהצלחה: ₪10,000 = 1 כסף שחור (כלומר עד
+// 100 כסף שחור על כל מיליון שקל שמומר בהצלחה)
+// מוגבל ל-5 פעמים בכל חלון של 4 שעות
+// הסכום המקסימלי גדל 10% בכל רמה, החל מ-₪1,000,000 ברמה 1
 // ==========================================
-const CONVERT_MIN_AMOUNT = 500;
-const CONVERT_MAX_AMOUNT_BASE = 20000;
+const CONVERT_MIN_AMOUNT = 1000;
+const CONVERT_MAX_AMOUNT_BASE = 1000000;
 // ==========================================
 // גבול המרה מקסימלי - עולה 10% בכל רמה
 // ==========================================
@@ -347,9 +368,9 @@ function getConvertMaxAmount(){
         CONVERT_MAX_AMOUNT_BASE * Math.pow(1.1, level - 1)
     );
 }
-const CONVERT_RATE = 200;
+const CONVERT_RATE = 10000;
 const CONVERT_WINDOW = 4 * 60 * 60 * 1000;
-const CONVERT_MAX_USES = 4;
+const CONVERT_MAX_USES = 5;
 // ==========================================
 // סטטוס המרה - כמה נותרו וכמה זמן לאיפוס
 // ==========================================
@@ -500,6 +521,188 @@ function convertMoneyToBlackMoney(amount){
     }
     return true;
 }
+// ==========================================
+// המרת כסף ליהלומים - אחרי מבצע גבייה, מטבע פרימיום
+// יחס קבוע (לא מבוסס-סיכוי), עד 10 המרות בכל 4 שעות
+// המחיר לא תלוי ברמה אלא במספר ההמרות שכבר בוצעו:
+// ההמרה הראשונה אי-פעם היא ₪1,000,000 ליהלום, ובכל המרה
+// נוספת המחיר עולה עוד 5%-20% (אקראי), עד תקרה של ₪10,000,000
+// ==========================================
+const DIAMOND_CONVERT_RATE_BASE = 1000000;
+const DIAMOND_CONVERT_RATE_CAP = 10000000;
+const DIAMOND_CONVERT_RATE_MIN_GROWTH = 0.05;
+const DIAMOND_CONVERT_RATE_MAX_GROWTH = 0.20;
+const DIAMOND_CONVERT_WINDOW = 4 * 60 * 60 * 1000;
+const DIAMOND_CONVERT_MAX_USES = 10;
+// כמות היהלומים המקסימלית שניתן לקנות בהמרה אחת
+const DIAMOND_CONVERT_MAX_PER_USE = 10;
+// ==========================================
+// מחיר יהלום בודד להמרה הבאה
+// אם עוד לא בוצעה אף המרה - המחיר הבסיסי (₪1,000,000)
+// ==========================================
+function getDiamondConvertRate(){
+    if(
+        !player
+        ||
+        typeof player.diamondConvertPrice !== "number"
+        ||
+        player.diamondConvertPrice <= 0
+    ){
+        return DIAMOND_CONVERT_RATE_BASE;
+    }
+    return Math.min(
+        DIAMOND_CONVERT_RATE_CAP,
+        Math.round(player.diamondConvertPrice)
+    );
+}
+// ==========================================
+// העלאת מחיר היהלום לאחר המרה - עולה 5%-20% אקראי
+// ==========================================
+function advanceDiamondConvertRate(){
+    if(!player) return;
+    const currentRate = getDiamondConvertRate();
+    const growth =
+    DIAMOND_CONVERT_RATE_MIN_GROWTH +
+    Math.random() * (DIAMOND_CONVERT_RATE_MAX_GROWTH - DIAMOND_CONVERT_RATE_MIN_GROWTH);
+    player.diamondConvertPrice =
+    Math.min(
+        DIAMOND_CONVERT_RATE_CAP,
+        Math.round(currentRate * (1 + growth))
+    );
+}
+// ==========================================
+// סכום מינימלי להמרה - מחיר יהלום אחד להמרה הבאה
+// ==========================================
+function getDiamondConvertMinAmount(){
+    return getDiamondConvertRate();
+}
+// ==========================================
+// גבול המרה ליהלומים - עד DIAMOND_CONVERT_MAX_PER_USE יהלומים בהמרה אחת
+// ==========================================
+function getDiamondConvertMaxAmount(){
+    return getDiamondConvertRate() * DIAMOND_CONVERT_MAX_PER_USE;
+}
+// ==========================================
+// סטטוס המרת יהלומים - כמה נותרו וכמה זמן לאיפוס
+// ==========================================
+function getDiamondConvertStatus(){
+    if(!player){
+        return { remaining:0, resetText:"" };
+    }
+    const now = Date.now();
+    const windowStart =
+    player.diamondConvertWindowStart || 0;
+    if(now - windowStart >= DIAMOND_CONVERT_WINDOW){
+        return { remaining: DIAMOND_CONVERT_MAX_USES, resetText:"" };
+    }
+    const used =
+    player.diamondConvertCount || 0;
+    const remaining =
+    Math.max(0, DIAMOND_CONVERT_MAX_USES - used);
+    const remainMs =
+    DIAMOND_CONVERT_WINDOW - (now - windowStart);
+    const hours =
+    Math.floor(remainMs / (60*60*1000));
+    const minutes =
+    Math.floor(
+        (remainMs % (60*60*1000)) / (60*1000)
+    );
+    return {
+        remaining:remaining,
+        resetText: hours + " שע' " + minutes + " דק'"
+    };
+}
+// ==========================================
+// ביצוע המרת כסף ליהלומים - יחס קבוע, ללא סיכוי כישלון
+// ==========================================
+function convertMoneyToDiamonds(amount){
+    if(!player){
+        return false;
+    }
+    amount =
+    Math.floor(Number(amount));
+    const diamondMinAmount =
+    getDiamondConvertMinAmount();
+    if(
+        !amount
+        ||
+        isNaN(amount)
+        ||
+        amount < diamondMinAmount
+    ){
+        showMessageSafeCity(
+            "💎 סכום מינימלי להמרה: ₪" + diamondMinAmount.toLocaleString()
+        );
+        return false;
+    }
+    const maxAllowed =
+    getDiamondConvertMaxAmount();
+    if(amount > maxAllowed){
+        showMessageSafeCity(
+            "💎 סכום מקסימלי להמרה ברמה שלך: ₪" + maxAllowed.toLocaleString()
+        );
+        return false;
+    }
+    const now = Date.now();
+    if(
+        !player.diamondConvertWindowStart
+        ||
+        now - player.diamondConvertWindowStart >= DIAMOND_CONVERT_WINDOW
+    ){
+        player.diamondConvertWindowStart = now;
+        player.diamondConvertCount = 0;
+    }
+    if((player.diamondConvertCount || 0) >= DIAMOND_CONVERT_MAX_USES){
+        const status = getDiamondConvertStatus();
+        showMessageSafeCity(
+            "💎 ניצלת את כל " + DIAMOND_CONVERT_MAX_USES +
+            " המרות היהלומים - עוד " + status.resetText
+        );
+        return false;
+    }
+    if(player.money < amount){
+        showMessageSafeCity("💰 אין מספיק כסף להמרה");
+        return false;
+    }
+    const rateUsed = getDiamondConvertRate();
+    player.money -= amount;
+    player.diamondConvertCount = (player.diamondConvertCount || 0) + 1;
+    if(typeof dailyAddProgress === "function") dailyAddProgress("specialActions", 1);
+    const diamondsGained =
+    Math.max(1, Math.floor(amount / rateUsed));
+    if(typeof player.diamonds !== "number"){
+        player.diamonds = 0;
+    }
+    player.diamonds += diamondsGained;
+    // המחיר עולה 5%-20% אקראית לקראת ההמרה הבאה
+    advanceDiamondConvertRate();
+    showMessageSafeCity(
+        "💎 המרת ₪" + amount.toLocaleString() + " במחיר ₪" + rateUsed.toLocaleString() +
+        " ליהלום וקיבלת " + diamondsGained + " 💎"
+    );
+    if(typeof saveGame === "function"){
+        saveGame();
+    }
+    if(typeof updateUI === "function"){
+        updateUI();
+    }
+    if(
+        typeof currentPage !== "undefined"
+        &&
+        currentPage === "actions"
+    ){
+        const content =
+        document.getElementById("gameContent");
+        if(
+            content
+            &&
+            typeof renderActions === "function"
+        ){
+            renderActions(content);
+        }
+    }
+    return true;
+}
 function claimCityGift(){
     if(!player){
         return false;
@@ -547,7 +750,7 @@ function claimCityGift(){
     player.lastGiftClaim = Date.now();
     if(typeof dailyAddProgress === "function") dailyAddProgress("specialActions", 1);
     showMessageSafeCity(
-        "🎁 קיבלת ₪" + money + " ו-" + gold + " 🥇" +
+        "🎁 קיבלת ₪" + money + " ו-" + gold + " 🪎" +
         (diamonds > 0 ? " ועוד 💎 יהלום נדיר!" : "")
     );
     if(typeof saveGame === "function"){
@@ -623,6 +826,10 @@ function renderActions(content){
     const bribeStatus = typeof getBribeStatus === "function" ? getBribeStatus() : {remaining:0,resetText:""};
     const convertStatus = typeof getConvertStatus === "function" ? getConvertStatus() : {remaining:0,resetText:""};
     const convertMaxAmount = typeof getConvertMaxAmount === "function" ? getConvertMaxAmount() : 1000;
+    const diamondConvertStatus = typeof getDiamondConvertStatus === "function" ? getDiamondConvertStatus() : {remaining:0,resetText:""};
+    const diamondConvertMaxAmount = typeof getDiamondConvertMaxAmount === "function" ? getDiamondConvertMaxAmount() : 1000000;
+    const diamondConvertMinAmount = typeof getDiamondConvertMinAmount === "function" ? getDiamondConvertMinAmount() : 1000000;
+    const diamondConvertRate = typeof getDiamondConvertRate === "function" ? getDiamondConvertRate() : 1000000;
     const money = Number(player.money || 0);
     const energy = Math.max(0, Number(player.energy || 0));
     const intel = getOperationStatus("intel", 4 * 60 * 60 * 1000);
@@ -633,21 +840,31 @@ function renderActions(content){
     const target = getOperationStatus("target", 4 * 60 * 60 * 1000);
     const supply = getOperationStatus("supply", 4 * 60 * 60 * 1000);
     const escape = getOperationStatus("escape", 4 * 60 * 60 * 1000);
+    const rIntel = getOperationRewardInfo("intel");
+    const rRaid = getOperationRewardInfo("raid");
+    const rBonus = getOperationRewardInfo("bonus");
+    const rGold = getOperationRewardInfo("gold");
+    const rPatrol = getOperationRewardInfo("patrol");
+    const rTarget = getOperationRewardInfo("target");
+    const rSupply = getOperationRewardInfo("supply");
+    const rEscape = getOperationRewardInfo("escape");
+    const opReward = (r) => r.moneyMax > r.moneyMin ? "₪" + r.moneyMin.toLocaleString() + "-" + r.moneyMax.toLocaleString() : "₪" + r.moneyMin.toLocaleString();
     content.innerHTML = `
         <div class="contentCard specialActionsPanel">
             <h3>🎯 פעולות נוספות — ${sideName}</h3>
             <p class="actionsIntro">פעולות ומבצעים נגד ${targetName}, בהתאם לצד שבחרת.</p>
             <div class="specialActionsGrid operationGrid">
-                <div class="specialActionCard"><div class="specialActionIcon">🖤</div><div class="specialActionTitle">מבצע גבייה</div><div class="specialActionText">גביית שוחד תמורת ${BRIBE_ENERGY_COST} ⚡. נותרו ${bribeStatus.remaining}/${BRIBE_MAX_USES} שימושים.</div><button class="upgradeBtn specialActionBtn" ${(energy < BRIBE_ENERGY_COST || bribeStatus.remaining <= 0) ? "disabled" : ""} onclick="collectBribe()">🖤 גבה</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">💱</div><div class="specialActionTitle">מבצע המרה</div><div class="specialActionText">המר כסף לכסף שחור. <b>מקסימום לרמה שלך: ₪${convertMaxAmount.toLocaleString()}</b></div><input type="number" id="convertAmountInput" min="${CONVERT_MIN_AMOUNT}" max="${convertMaxAmount}" step="100" value="${Math.min(CONVERT_MIN_AMOUNT, Math.max(0, Math.floor(money)))}" class="convertInput"><div class="specialActionStatus">עד ${convertStatus.remaining} המרות בחלון הנוכחי</div><button class="upgradeBtn specialActionBtn" ${(convertStatus.remaining <= 0 || money < CONVERT_MIN_AMOUNT) ? "disabled" : ""} onclick="handleConvertClick()">💱 המר</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">🕵️</div><div class="specialActionTitle">מבצע מודיעין נגד ${targetName}</div><div class="specialActionText">איסוף מידע על ${targetName} תמורת כסף ו־XP.</div><div class="specialActionStatus">${intel.ready ? "✅ זמין" : "⏳ " + intel.text}</div><button class="upgradeBtn specialActionBtn" ${intel.ready ? "" : "disabled"} onclick="runSpecialOperation('intel')">🕵️ הפעל</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">💰</div><div class="specialActionTitle">פשיטה על ${targetName}</div><div class="specialActionText">מבצע התקפי מסוכן עם תגמול גבוה יותר.</div><div class="specialActionStatus">${raid.ready ? "✅ זמין" : "⏳ " + raid.text}</div><button class="upgradeBtn specialActionBtn" ${raid.ready ? "" : "disabled"} onclick="runSpecialOperation('raid')">💰 הפעל</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">📦</div><div class="specialActionTitle">אספקת ${sideName}</div><div class="specialActionText">קבלת אספקה שמחזירה אנרגיה ומביאה כסף.</div><div class="specialActionStatus">${bonus.ready ? "✅ זמין" : "⏳ " + bonus.text}</div><button class="upgradeBtn specialActionBtn" ${bonus.ready ? "" : "disabled"} onclick="runSpecialOperation('bonus')">📦 הפעל</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">🥇</div><div class="specialActionTitle">מבצע זהב</div><div class="specialActionText">פעולה יומית להשגת זהב נוסף.</div><div class="specialActionStatus">${gold.ready ? "✅ זמין" : "⏳ " + gold.text}</div><button class="upgradeBtn specialActionBtn" ${gold.ready ? "" : "disabled"} onclick="runSpecialOperation('gold')">🥇 הפעל</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">🚨</div><div class="specialActionTitle">מבצע ${isPolice ? "מעצר" : "התחמקות"}</div><div class="specialActionText">${isPolice ? "מבצע מעצר ממוקד נגד עבריינים." : "מבצע התחמקות ממוקד מכוחות משטרה."}</div><div class="specialActionStatus">${patrol.ready ? "✅ זמין" : "⏳ " + patrol.text}</div><button class="upgradeBtn specialActionBtn" ${patrol.ready ? "" : "disabled"} onclick="runSpecialOperation('patrol')">🚨 הפעל</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">🎯</div><div class="specialActionTitle">${isPolice ? "חיסול יעד פשע" : "פגיעה ביעד משטרתי"}</div><div class="specialActionText">מבצע ממוקד נגד ${targetName} עם תגמול מוגדל.</div><div class="specialActionStatus">${target.ready ? "✅ זמין" : "⏳ " + target.text}</div><button class="upgradeBtn specialActionBtn" ${target.ready ? "" : "disabled"} onclick="runSpecialOperation('target')">🎯 הפעל</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">🧰</div><div class="specialActionTitle">ציוד מבצעי</div><div class="specialActionText">חבילת ציוד שמחזירה אנרגיה ומשפרת מוכנות.</div><div class="specialActionStatus">${supply.ready ? "✅ זמין" : "⏳ " + supply.text}</div><button class="upgradeBtn specialActionBtn" ${supply.ready ? "" : "disabled"} onclick="runSpecialOperation('supply')">🧰 הפעל</button></div>
-                <div class="specialActionCard"><div class="specialActionIcon">🛡️</div><div class="specialActionTitle">מבצע הישרדות</div><div class="specialActionText">פעולה הגנתית שמספקת כסף ו־XP.</div><div class="specialActionStatus">${escape.ready ? "✅ זמין" : "⏳ " + escape.text}</div><button class="upgradeBtn specialActionBtn" ${escape.ready ? "" : "disabled"} onclick="runSpecialOperation('escape')">🛡️ הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🖤</div><div class="specialActionTitle">מבצע גבייה</div><div class="specialActionText">גביית שוחד תמורת ${BRIBE_ENERGY_COST} ⚡. רמה ${player.level || 1}: ₪${getBribeRewardRange().moneyMin.toLocaleString()}–₪${getBribeRewardRange().moneyMax.toLocaleString()} + ${getBribeRewardRange().blackMoneyMin}–${getBribeRewardRange().blackMoneyMax} 🖤. נותרו ${bribeStatus.remaining}/${BRIBE_MAX_USES} שימושים.</div><button class="upgradeBtn specialActionBtn" ${(energy < BRIBE_ENERGY_COST || bribeStatus.remaining <= 0) ? "disabled" : ""} onclick="collectBribe()">🖤 גבה</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">💎</div><div class="specialActionTitle">המרת יהלומים</div><div class="specialActionText">המר כסף רגיל ליהלומים. מחיר ליהלום בהמרה הבאה: ₪${diamondConvertRate.toLocaleString()} (המחיר עולה 5%-20% אקראית בכל המרה). <b>מקסימום להמרה אחת: ₪${diamondConvertMaxAmount.toLocaleString()} (עד ${DIAMOND_CONVERT_MAX_PER_USE} 💎)</b></div><input type="number" id="diamondConvertAmountInput" min="${diamondConvertMinAmount}" max="${diamondConvertMaxAmount}" step="1000" value="${diamondConvertMinAmount}" class="convertInput"><div class="specialActionStatus">עד ${diamondConvertStatus.remaining} המרות מתוך ${DIAMOND_CONVERT_MAX_USES} בחלון הנוכחי</div><button class="upgradeBtn specialActionBtn" ${(diamondConvertStatus.remaining <= 0 || money < diamondConvertMinAmount) ? "disabled" : ""} onclick="handleDiamondConvertClick()">💎 המר</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">💱</div><div class="specialActionTitle">מבצע המרה</div><div class="specialActionText">המר כסף לכסף שחור. כל ₪${CONVERT_RATE.toLocaleString()} = 🖤1 (במקרה של הצלחה). <b>מקסימום לרמה שלך: ₪${convertMaxAmount.toLocaleString()}</b></div><input type="number" id="convertAmountInput" min="${CONVERT_MIN_AMOUNT}" max="${convertMaxAmount}" step="100" value="${Math.min(CONVERT_MIN_AMOUNT, Math.max(0, Math.floor(money)))}" class="convertInput"><div class="specialActionStatus">עד ${convertStatus.remaining} המרות מתוך ${CONVERT_MAX_USES} בחלון הנוכחי</div><button class="upgradeBtn specialActionBtn" ${(convertStatus.remaining <= 0 || money < CONVERT_MIN_AMOUNT) ? "disabled" : ""} onclick="handleConvertClick()">💱 המר</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🕵️</div><div class="specialActionTitle">מבצע מודיעין נגד ${targetName}</div><div class="specialActionText">איסוף מידע על ${targetName}. תגמול: ${opReward(rIntel)} + ${rIntel.xp} XP.</div><div class="specialActionStatus">${intel.ready ? "✅ זמין" : "⏳ " + intel.text}</div><button class="upgradeBtn specialActionBtn" ${intel.ready ? "" : "disabled"} onclick="runSpecialOperation('intel')">🕵️ הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">💰</div><div class="specialActionTitle">פשיטה על ${targetName}</div><div class="specialActionText">מבצע התקפי מסוכן. תגמול: ${opReward(rRaid)} + ${rRaid.xp} XP.</div><div class="specialActionStatus">${raid.ready ? "✅ זמין" : "⏳ " + raid.text}</div><button class="upgradeBtn specialActionBtn" ${raid.ready ? "" : "disabled"} onclick="runSpecialOperation('raid')">💰 הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">📦</div><div class="specialActionTitle">אספקת ${sideName}</div><div class="specialActionText">קבלת אספקה. תגמול: ${opReward(rBonus)} + ${rBonus.energy} ⚡.</div><div class="specialActionStatus">${bonus.ready ? "✅ זמין" : "⏳ " + bonus.text}</div><button class="upgradeBtn specialActionBtn" ${bonus.ready ? "" : "disabled"} onclick="runSpecialOperation('bonus')">📦 הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🪎</div><div class="specialActionTitle">מבצע זהב</div><div class="specialActionText">פעולה יומית להשגת זהב. תגמול: ${rGold.gold} 🪎 + ${rGold.xp} XP.</div><div class="specialActionStatus">${gold.ready ? "✅ זמין" : "⏳ " + gold.text}</div><button class="upgradeBtn specialActionBtn" ${gold.ready ? "" : "disabled"} onclick="runSpecialOperation('gold')">🪎 הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🚨</div><div class="specialActionTitle">מבצע ${isPolice ? "מעצר" : "התחמקות"}</div><div class="specialActionText">${isPolice ? "מבצע מעצר ממוקד נגד עבריינים." : "מבצע התחמקות ממוקד מכוחות משטרה."} תגמול: ${opReward(rPatrol)} + ${rPatrol.xp} XP.</div><div class="specialActionStatus">${patrol.ready ? "✅ זמין" : "⏳ " + patrol.text}</div><button class="upgradeBtn specialActionBtn" ${patrol.ready ? "" : "disabled"} onclick="runSpecialOperation('patrol')">🚨 הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🎯</div><div class="specialActionTitle">${isPolice ? "חיסול יעד פשע" : "פגיעה ביעד משטרתי"}</div><div class="specialActionText">מבצע ממוקד נגד ${targetName}. תגמול: ${opReward(rTarget)} + ${rTarget.xp} XP.</div><div class="specialActionStatus">${target.ready ? "✅ זמין" : "⏳ " + target.text}</div><button class="upgradeBtn specialActionBtn" ${target.ready ? "" : "disabled"} onclick="runSpecialOperation('target')">🎯 הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🧰</div><div class="specialActionTitle">ציוד מבצעי</div><div class="specialActionText">חבילת ציוד. תגמול: +${rSupply.energy} ⚡, ${opReward(rSupply)} + ${rSupply.xp} XP.</div><div class="specialActionStatus">${supply.ready ? "✅ זמין" : "⏳ " + supply.text}</div><button class="upgradeBtn specialActionBtn" ${supply.ready ? "" : "disabled"} onclick="runSpecialOperation('supply')">🧰 הפעל</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🛡️</div><div class="specialActionTitle">מבצע הישרדות</div><div class="specialActionText">פעולה הגנתית. תגמול: +${rEscape.energy} ⚡, ${opReward(rEscape)} + ${rEscape.xp} XP.</div><div class="specialActionStatus">${escape.ready ? "✅ זמין" : "⏳ " + escape.text}</div><button class="upgradeBtn specialActionBtn" ${escape.ready ? "" : "disabled"} onclick="runSpecialOperation('escape')">🛡️ הפעל</button></div>
             </div>
         </div>`;
 }
@@ -661,6 +878,41 @@ function getOperationStatus(key, cooldown){
     const h=Math.floor(remain/3600000), m=Math.floor((remain%3600000)/60000);
     return {ready:false,text:(h ? h+" שע' " : "") + m + " דק'"};
 }
+// ==========================================
+// טבלת תגמולים בסיסית לכל מבצע מיוחד
+// (ברמה 1, לפני מכפיל הרמה)
+// ==========================================
+const OPERATION_BASE_REWARDS = {
+    intel:  {moneyMin:450,  moneyMax:450,  xp:35,  gold:0, energy:0},
+    raid:   {moneyMin:700,  moneyMax:1300, xp:50,  gold:0, energy:0},
+    bonus:  {moneyMin:350,  moneyMax:350,  xp:0,   gold:0, energy:15},
+    gold:   {moneyMin:0,    moneyMax:0,    xp:25,  gold:5, energy:0},
+    patrol: {moneyMin:900,  moneyMax:1400, xp:70,  gold:0, energy:0},
+    target: {moneyMin:1400, moneyMax:2400, xp:110, gold:0, energy:0},
+    supply: {moneyMin:500,  moneyMax:500,  xp:45,  gold:0, energy:25},
+    escape: {moneyMin:800,  moneyMax:800,  xp:60,  gold:0, energy:10}
+};
+// ==========================================
+// תגמול מבצע בפועל - כסף וזהב גדלים לפי רמת השחקן
+// (XP ואנרגיה נשארים קבועים)
+// ==========================================
+function getOperationRewardInfo(type){
+    const base = OPERATION_BASE_REWARDS[type];
+    if(!base) return {moneyMin:0, moneyMax:0, xp:0, gold:0, energy:0};
+    const multiplier =
+    typeof getRewardLevelMultiplier === "function"
+    ?
+    getRewardLevelMultiplier()
+    :
+    1;
+    return {
+        moneyMin: Math.round(base.moneyMin * multiplier),
+        moneyMax: Math.round(base.moneyMax * multiplier),
+        xp: base.xp,
+        gold: Math.round(base.gold * multiplier),
+        energy: base.energy
+    };
+}
 function runSpecialOperation(type){
     if(!player) return false;
     const cooldowns={intel:4*3600000,raid:4*3600000,bonus:4*3600000,gold:4*3600000,patrol:4*3600000,target:4*3600000,supply:4*3600000,escape:4*3600000};
@@ -668,15 +920,22 @@ function runSpecialOperation(type){
     if(!status.ready){ showMessageSafeCity("⏳ המבצע עדיין בהמתנה"); return false; }
     if(!player.specialOperations || typeof player.specialOperations !== "object") player.specialOperations={};
     player.specialOperations[type]=Date.now();
+    const r = getOperationRewardInfo(type);
+    const reward =
+    r.moneyMax > r.moneyMin
+    ?
+    r.moneyMin + Math.floor(Math.random() * (r.moneyMax - r.moneyMin + 1))
+    :
+    r.moneyMin;
     let message="";
-    if(type==="intel"){ player.money=(Number(player.money)||0)+450; player.xp=(Number(player.xp)||0)+35; message="🕵️ מודיעין נאסף: +₪450 ו־35 XP"; }
-    if(type==="raid"){ const reward=700+Math.floor(Math.random()*601); player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+50; message="💰 המבצע הצליח: +₪"+reward.toLocaleString()+" ו־50 XP"; }
-    if(type==="bonus"){ player.money=(Number(player.money)||0)+350; player.energy=Math.min(100,(Number(player.energy)||0)+15); message="📦 האספקה הגיעה: +₪350 ו־15 ⚡"; }
-    if(type==="gold"){ player.gold=(Number(player.gold)||0)+5; player.xp=(Number(player.xp)||0)+25; message="🥇 מבצע הזהב הצליח: +5 זהב ו־25 XP"; }
-    if(type==="patrol"){ const reward=900+Math.floor(Math.random()*501); player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+70; message=isPoliceSide() ? "🚨 מבצע מעצר הצליח: +₪"+reward.toLocaleString()+" ו־70 XP" : "🚨 התחמקת מהמשטרה: +₪"+reward.toLocaleString()+" ו־70 XP"; }
-    if(type==="target"){ const reward=1400+Math.floor(Math.random()*1001); player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+110; message="🎯 המבצע הממוקד הצליח נגד היעד: +₪"+reward.toLocaleString()+" ו־110 XP"; }
-    if(type==="supply"){ player.energy=Math.min(100,(Number(player.energy)||0)+25); player.money=(Number(player.money)||0)+500; player.xp=(Number(player.xp)||0)+45; message="🧰 הציוד המבצעי הגיע: +25 ⚡, +₪500 ו־45 XP"; }
-    if(type==="escape"){ player.energy=Math.min(100,(Number(player.energy)||0)+10); player.money=(Number(player.money)||0)+800; player.xp=(Number(player.xp)||0)+60; message="🛡️ מבצע הישרדות הצליח: +10 ⚡, +₪800 ו־60 XP"; }
+    if(type==="intel"){ player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+r.xp; message="🕵️ מודיעין נאסף: +₪"+reward.toLocaleString()+" ו־"+r.xp+" XP"; }
+    if(type==="raid"){ player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+r.xp; message="💰 המבצע הצליח: +₪"+reward.toLocaleString()+" ו־"+r.xp+" XP"; }
+    if(type==="bonus"){ player.money=(Number(player.money)||0)+reward; player.energy=Math.min(100,(Number(player.energy)||0)+r.energy); message="📦 האספקה הגיעה: +₪"+reward.toLocaleString()+" ו־"+r.energy+" ⚡"; }
+    if(type==="gold"){ player.gold=(Number(player.gold)||0)+r.gold; player.xp=(Number(player.xp)||0)+r.xp; message="🪎 מבצע הזהב הצליח: +"+r.gold+" זהב ו־"+r.xp+" XP"; }
+    if(type==="patrol"){ player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+r.xp; message=isPoliceSide() ? "🚨 מבצע מעצר הצליח: +₪"+reward.toLocaleString()+" ו־"+r.xp+" XP" : "🚨 התחמקת מהמשטרה: +₪"+reward.toLocaleString()+" ו־"+r.xp+" XP"; }
+    if(type==="target"){ player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+r.xp; message="🎯 המבצע הממוקד הצליח נגד היעד: +₪"+reward.toLocaleString()+" ו־"+r.xp+" XP"; }
+    if(type==="supply"){ player.energy=Math.min(100,(Number(player.energy)||0)+r.energy); player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+r.xp; message="🧰 הציוד המבצעי הגיע: +"+r.energy+" ⚡, +₪"+reward.toLocaleString()+" ו־"+r.xp+" XP"; }
+    if(type==="escape"){ player.energy=Math.min(100,(Number(player.energy)||0)+r.energy); player.money=(Number(player.money)||0)+reward; player.xp=(Number(player.xp)||0)+r.xp; message="🛡️ מבצע הישרדות הצליח: +"+r.energy+" ⚡, +₪"+reward.toLocaleString()+" ו־"+r.xp+" XP"; }
     if(typeof dailyAddProgress === "function") dailyAddProgress("specialActions",1);
     if(typeof saveGame === "function") saveGame();
     if(typeof showMessageSafeCity === "function") showMessageSafeCity(message);
@@ -780,7 +1039,7 @@ function renderCity(content){
                 amountHtml += `<span class="cityNewsAmount">${sign}₪${item.money}</span>`;
             }
             if(item.gold > 0){
-                amountHtml += `<span class="cityNewsAmount">+${item.gold} 🥇</span>`;
+                amountHtml += `<span class="cityNewsAmount">+${item.gold} 🪎</span>`;
             }
             if(item.diamonds > 0){
                 amountHtml += `<span class="cityNewsAmount">+${item.diamonds} 💎</span>`;
@@ -809,5 +1068,5 @@ function showMessageSafeCity(message){
     }
 }
 console.log(
-    "WARDEAL CITY v0.1.0 READY"
+    "WARDEAL CITY v2.5 READY"
 );

@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.1.0
+   WARDEAL v2.1
    מערכת קרבות
    יחידות מוסיפות כוח התקפה
    הגנה מפחיתה נזק שנספג
@@ -67,11 +67,26 @@ function getBattleEnemyByIndex(index){
 // ==========================================
 // עלות אנרגיה לקרב לפי רמת היריב
 // ==========================================
+function getBattleTargetLevel(enemy){
+    if(!player || !enemy) return 1;
+    const playerLevel = Math.max(1, Number(player.level) || 1);
+    const unlockLevel = Math.max(1, Number(enemy.minLevel) || 1);
+    // האויב מתקדם יחד עם השחקן, אבל לא מדביק אותו מיד.
+    // כך גם ברמות גבוהות הקרבות נשארים ניתנים לניצחון.
+    return Math.max(
+        unlockLevel,
+        Math.min(
+            playerLevel,
+            Math.floor(unlockLevel + Math.max(0, playerLevel - unlockLevel) * 0.65)
+        )
+    );
+}
 function getBattleEnergyCost(enemy){
     if(!enemy) return 10;
-    const targetLevel = Math.max(1, Number(enemy.minLevel) || 1);
-    const difficulty = Math.max(0.5, Number(enemy.scaledDifficulty || enemy.difficulty) || 1);
-    return Math.min(60, Math.max(10, Math.round(10 + (targetLevel - 1) * 3 + difficulty * 5)));
+    const targetLevel = getBattleTargetLevel(enemy);
+    const difficulty = Math.max(0.5, Number(enemy.difficulty) || 1);
+    // יותר רמה + יותר קושי = יותר אנרגיה.
+    return Math.min(60, Math.max(10, Math.round(8 + targetLevel * 2.5 + difficulty * 5)));
 }
 // ==========================================
 // קרב
@@ -115,15 +130,21 @@ function startBattle(enemyIndex){
     player.energy -= battleEnergyCost;
     const attackPower =
     getAttackPower();
-    // טווח אקראי סביב רמת הקושי של האויב
-    const variance =
-    0.76 + Math.random() * 0.4;
-    // כוח האויב אינו נגזר ישירות מכוח השחקן — אחרת קרבות קשים
-    // הופכים כמעט אוטומטית להפסד. הוא גדל לפי רמת היריב והקושי.
+    const targetLevel = getBattleTargetLevel(enemy);
+    // כוח האויב גדל לפי רמת הקרב והקושי, אך נשאר בתחום שבו
+    // השקעה בכוח, יחידות וציוד מאפשרת לשחקן לנצח.
     const enemyPowerBase =
-        (6 + (Math.max(1, Number(enemy.minLevel) || 1) * 5)) *
-        Math.max(0.5, enemy.scaledDifficulty);
-    const enemyPower = Math.max(1, enemyPowerBase * variance);
+        (10 + targetLevel * 4.2) *
+        Math.max(0.55, Number(enemy.difficulty) || 1);
+    const enemyVariance = 0.90 + Math.random() * 0.20;
+    const enemyPower = Math.max(1, enemyPowerBase * enemyVariance);
+    // גם כאשר כוח השחקן נמוך מעט, יש סיכוי לניצחון.
+    // כאשר השחקן חזק יותר מהאויב, הניצחון נשאר מובטח.
+    const powerRatio = attackPower / Math.max(1, enemyPower);
+    const battleWinChance = powerRatio >= 1
+        ? 1
+        : Math.max(0.15, Math.min(0.48, 0.18 + powerRatio * 0.30));
+    const battleWon = Math.random() < battleWinChance;
     const minReward =
     typeof BATTLE_MIN_REWARD !== "undefined"
     ?
@@ -142,7 +163,7 @@ function startBattle(enemyIndex){
     BATTLE_XP_REWARD
     :
     25;
-    if(attackPower >= enemyPower){
+    if(battleWon){
         // אויב קשה יותר = פרס גדול יותר
         const baseReward =
         Math.floor(
@@ -201,9 +222,9 @@ function startBattle(enemyIndex){
         showMessage(
             "⚔️ ניצחת את " +
             enemy.name +
-            " וקיבלת ₪" +
+            " (רמת קרב " + targetLevel + ") וקיבלת ₪" +
             reward +
-            " ו-" + goldReward + " 🥇" +
+            " ו-" + goldReward + " 🪎" +
             (
                 blackMoneyBonus > 0
                 ?
@@ -321,7 +342,7 @@ function startBattle(enemyIndex){
         showMessage(
             "💥 הפסדת מול " +
             enemy.name +
-            " (" +
+            " (רמת קרב " + targetLevel + ") (" +
             enemy.desc +
             ") -" +
             reducedDamage +
@@ -329,7 +350,7 @@ function startBattle(enemyIndex){
             (
                 goldLost > 0
                 ?
-                " ואיבדת " + goldLost + " 🥇"
+                " ואיבדת " + goldLost + " 🪎"
                 :
                 ""
             ) +
@@ -378,5 +399,5 @@ function startBattle(enemyIndex){
     }
 }
 console.log(
-    "WARDEAL COMBAT v0.1.0 READY"
+    "WARDEAL COMBAT v2.0 READY"
 );

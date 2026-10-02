@@ -1,7 +1,8 @@
 /* ==========================================
-   WARDEAL v0.7.0
+   WARDEAL v2.4
    מערכת משימות
    10 משימות, מתאפסות כל 4 שעות
+   תגמולי כסף/זהב/כסף שחור גדלים לפי רמת השחקן
 ========================================== */
 const DAILY_MISSION_RESET_MS = 4 * 60 * 60 * 1000;
 const DAILY_MISSION_STAT_KEYS = [
@@ -20,6 +21,25 @@ const DAILY_MISSIONS_BASE = [
     { id:"hqbuilder", icon:"🏰", name:"מפקד מתפתח", desc:"שדרג את המפקדה / התחנה פעם אחת", target:1, stat:"hqUpgrades", reward:{money:1000, gold:4}, xp:100 },
     { id:"champion", icon:"🏆", name:"אלוף המחזור", desc:"השלם 6 משימות אחרות במחזור הנוכחי", target:6, stat:"missionsCompleted", reward:{money:2500, gold:8, diamonds:1}, xp:200 }
 ];
+// ==========================================
+// תגמול משימה בפועל - גדל לפי רמת השחקן
+// (יהלומים נשארים קבועים - מטבע פרימיום נדיר)
+// ==========================================
+function getMissionEffectiveReward(mission){
+    const multiplier =
+    typeof getRewardLevelMultiplier === "function"
+    ?
+    getRewardLevelMultiplier()
+    :
+    1;
+    const base = mission.reward || {};
+    return {
+        money: Math.round((base.money || 0) * multiplier),
+        gold: Math.round((base.gold || 0) * multiplier),
+        blackMoney: Math.round((base.blackMoney || 0) * multiplier),
+        diamonds: base.diamonds || 0
+    };
+}
 function getDailyMissions(){
     const police = player && player.side === "police";
     return DAILY_MISSIONS_BASE.map(m=>({ ...m,
@@ -85,10 +105,11 @@ function claimDailyMission(id){
         return;
     }
     data.claimed[id]=true;
-    player.money += mission.reward.money||0;
-    player.gold += mission.reward.gold||0;
-    player.diamonds += mission.reward.diamonds||0;
-    player.blackMoney += mission.reward.blackMoney||0;
+    const effectiveReward = getMissionEffectiveReward(mission);
+    player.money += effectiveReward.money||0;
+    player.gold += effectiveReward.gold||0;
+    player.diamonds += effectiveReward.diamonds||0;
+    player.blackMoney += effectiveReward.blackMoney||0;
     if(typeof addXP === "function") addXP(mission.xp||0);
     if(typeof saveGame === "function") saveGame();
     if(typeof updateUI === "function") updateUI();
@@ -104,11 +125,12 @@ function renderDailyMissions(content){
     let html=`<div class="contentCard dailyMissionsPanel"><h3>📅 משימות</h3><p class="dailyIntro">השלם משימות וקבל תגמולים. המשימות מתאפסות כל 4 שעות - עוד ${resetStatus.timeText}.</p><div class="dailySummary">🏆 הושלמו במחזור: <b>${completed}/${missions.length}</b></div><div class="dailyGrid">`;
     missions.forEach(m=>{
         const p=getDailyMissionProgress(m), claimed=isDailyMissionClaimed(m.id), pct=Math.min(100,Math.floor((p/m.target)*100));
+        const effectiveReward=getMissionEffectiveReward(m);
         const reward=[];
-        if(m.reward.money) reward.push("₪"+m.reward.money.toLocaleString());
-        if(m.reward.gold) reward.push(m.reward.gold+" 🥇");
-        if(m.reward.diamonds) reward.push(m.reward.diamonds+" 💎");
-        if(m.reward.blackMoney) reward.push(m.reward.blackMoney+" 🖤");
+        if(effectiveReward.money) reward.push("₪"+effectiveReward.money.toLocaleString());
+        if(effectiveReward.gold) reward.push(effectiveReward.gold+" 🪎");
+        if(effectiveReward.diamonds) reward.push(effectiveReward.diamonds+" 💎");
+        if(effectiveReward.blackMoney) reward.push(effectiveReward.blackMoney+" 🖤");
         html+=`<div class="dailyMissionCard ${claimed?"claimed":""}"><div class="dailyMissionIcon">${m.icon}</div><div class="dailyMissionName">${m.name}</div><div class="dailyMissionDesc">${m.desc}</div><div class="dailyMissionProgressText">${p.toLocaleString()} / ${m.target.toLocaleString()}</div><div class="dailyProgress"><div style="width:${pct}%"></div></div><div class="dailyReward">🎁 ${reward.join(" · ")} · ${m.xp} XP</div><button class="upgradeBtn dailyClaimBtn" ${claimed||p<m.target?"disabled":""} onclick="claimDailyMission('${m.id}')">${claimed?"✅ נאסף":"🎁 אסוף פרס"}</button></div>`;
     });
     html+=`</div></div>`;

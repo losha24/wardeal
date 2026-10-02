@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v0.6.0
+   WARDEAL v2.1
    מערכת תחנה
    שדרוג עד רמה 50 + בונוסים + מתנה
 ========================================== */
@@ -67,6 +67,14 @@ function upgradeStation(){
         if(content && typeof renderCity === "function") renderCity(content);
     }
     return true;
+}
+// תאימות לשמות הישנים שבהם השתמשו city.js ו-economy.js.
+// שתי המערכות מפנות עכשיו לאותה תחנה בפועל.
+function getHeadquartersIncomeMultiplier(){
+    return getStationIncomeMultiplier();
+}
+function getHeadquartersGiftMultiplier(){
+    return getStationGiftMultiplier();
 }
 function getStationGiftMultiplierSafe(){
     return typeof getStationGiftMultiplier === "function" ? getStationGiftMultiplier() : 1;
