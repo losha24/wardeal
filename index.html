@@ -2,7 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<style>html,body{touch-action:pan-x pan-y;}</style>
 <title>WARDEAL</title>
 <style>
   #startScreen,
@@ -11,6 +12,7 @@
   }
 </style>
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <button id="helpButton" class="helpButton" onclick="openHelp()">❓</button>
@@ -108,7 +110,7 @@ onclick="confirmNewGame(this)">
 </span>
 </div>
 <div>
-🥇
+🪎
 <span id="gold">
 0
 </span>
@@ -327,8 +329,9 @@ onclick="openPage('daily',this)">
 <script src="js/core.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/app.js"></script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
 <footer class="warDealFooter">
-    © 2026 אלכסיי זבודיסקר | WARDEAL v0.6.0
+    © 2026 אלכסיי זבודיסקר | WARDEAL v2.1
 </footer>
 </body>
 </html>

@@ -1,0 +1,12 @@
+{
+  "name": "WARDEAL — Future Crime & War Strategy",
+  "short_name": "WARDEAL",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0b14",
+  "theme_color": "#15102a",
+  "description": "WARDEAL — Future Crime & War Strategy"
+}
