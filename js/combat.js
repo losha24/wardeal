@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v2.1
+   WARDEAL v2.8
    מערכת קרבות
    יחידות מוסיפות כוח התקפה
    הגנה מפחיתה נזק שנספג
@@ -22,6 +22,60 @@ const ENEMIES = {
         { name:"כוח מיוחד", desc:"יחידה מיוחדת מהמסוכנות ביותר", difficulty:1.60, minLevel:10, icon:"💀" }
     ]
 };
+// ==========================================
+// נוסחת הסתברות ניצחון משותפת - קרב רגיל/בוס/מפלצת
+// עקומה חלקה (לא "צוק" בינארי): גם בכוח מקסימלי
+// יש עדיין סיכוי קטן להפסיד, וגם בכוח מינימלי יש
+// עדיין סיכוי קטן לנצח. ביחס כוחות שווה (1:1) הסיכוי
+// הוא בדיוק באמצע בין floor ל-ceiling.
+// dangerous=true (מצב "קרב מסוכן") מוריד את הסיכוי
+// עוד יותר, בתמורה לתגמול גבוה יותר אם מנצחים.
+// ==========================================
+const DANGEROUS_WIN_CHANCE_PENALTY = 0.20;
+const DANGEROUS_WIN_FLOOR = 0.03;
+const DANGEROUS_REWARD_MULTIPLIER = 1.75;
+let dangerousBattleMode = false;
+function getWinChance(powerRatio, floor, ceiling, dangerous){
+    const safeRatio = Math.max(0, Number(powerRatio) || 0);
+    const t = safeRatio / (safeRatio + 1);
+    let chance = floor + (ceiling - floor) * t;
+    if(dangerous){
+        chance = Math.max(DANGEROUS_WIN_FLOOR, chance - DANGEROUS_WIN_CHANCE_PENALTY);
+    }
+    return Math.max(0, Math.min(1, chance));
+}
+// ==========================================
+// הפעלה/כיבוי של מצב "קרב מסוכן"
+// ==========================================
+function toggleDangerousMode(){
+    dangerousBattleMode = !dangerousBattleMode;
+    showMessage(
+        dangerousBattleMode
+        ? "☠️ מצב קרב מסוכן הופעל - סיכוי ניצחון נמוך יותר, אך תגמול גבוה פי " + DANGEROUS_REWARD_MULTIPLIER
+        : "🛡️ מצב קרב מסוכן כובה - חזרה לסיכויים הרגילים"
+    );
+    if(typeof currentPage !== "undefined" && typeof document !== "undefined"){
+        const content = document.getElementById("gameContent");
+        if(content){
+            if(currentPage === "battle" && typeof renderBattle === "function"){
+                renderBattle(content);
+            }
+        }
+    }
+}
+const BATTLE_WIN_FLOOR = 0.12;
+const BATTLE_WIN_CEILING = 0.88;
+// ==========================================
+// סיכוי ניצחון משוער מול אויב - לתצוגה מראש בממשק
+// ==========================================
+function getBattleWinPercent(enemy){
+    if(!player || !enemy) return 0;
+    const attackPower = getAttackPower();
+    const targetLevel = getBattleTargetLevel(enemy);
+    const enemyPower = Math.max(1, (10 + targetLevel * 4.2) * Math.max(0.55, Number(enemy.difficulty) || 1));
+    const ratio = attackPower / enemyPower;
+    return Math.round(getWinChance(ratio, BATTLE_WIN_FLOOR, BATTLE_WIN_CEILING, dangerousBattleMode) * 100);
+}
 function getBattleEnemies(){
     if(!player) return [];
     const pool = player.side === "police" ? ENEMIES.forPolice : ENEMIES.forCriminal;
@@ -127,24 +181,22 @@ function startBattle(enemyIndex){
         showMessage("⚡ הקרב דורש " + battleEnergyCost + " אנרגיה - יש לך רק " + Math.max(0, Number(player.energy)||0));
         return;
     }
+    const isDangerous = dangerousBattleMode;
     player.energy -= battleEnergyCost;
     const attackPower =
     getAttackPower();
     const targetLevel = getBattleTargetLevel(enemy);
-    // כוח האויב גדל לפי רמת הקרב והקושי, אך נשאר בתחום שבו
-    // השקעה בכוח, יחידות וציוד מאפשרת לשחקן לנצח.
-    const enemyPowerBase =
-        (10 + targetLevel * 4.2) *
-        Math.max(0.55, Number(enemy.difficulty) || 1);
-    const enemyVariance = 0.90 + Math.random() * 0.20;
-    const enemyPower = Math.max(1, enemyPowerBase * enemyVariance);
-    // גם כאשר כוח השחקן נמוך מעט, יש סיכוי לניצחון.
-    // כאשר השחקן חזק יותר מהאויב, הניצחון נשאר מובטח.
-    const powerRatio = attackPower / Math.max(1, enemyPower);
-    const battleWinChance = powerRatio >= 1
-        ? 1
-        : Math.max(0.15, Math.min(0.48, 0.18 + powerRatio * 0.30));
+    // כוח האויב גדל לפי רמת הקרב והקושי. הניצחון/הפסד
+    // עצמם לא נקבעים בצורה בינארית אלא לפי עקומת הסתברות
+    // חלקה (getWinChance) - גם בכוח מקסימלי יש סיכוי קטן
+    // להפסיד, וגם בכוח מינימלי יש סיכוי קטן לנצח.
+    const enemyPower =
+        Math.max(1, (10 + targetLevel * 4.2) *
+        Math.max(0.55, Number(enemy.difficulty) || 1));
+    const powerRatio = attackPower / enemyPower;
+    const battleWinChance = getWinChance(powerRatio, BATTLE_WIN_FLOOR, BATTLE_WIN_CEILING, isDangerous);
     const battleWon = Math.random() < battleWinChance;
+    const rewardMultiplier = isDangerous ? DANGEROUS_REWARD_MULTIPLIER : 1;
     const minReward =
     typeof BATTLE_MIN_REWARD !== "undefined"
     ?
@@ -164,25 +216,22 @@ function startBattle(enemyIndex){
     :
     25;
     if(battleWon){
-        // אויב קשה יותר = פרס גדול יותר
+        // אויב קשה יותר = פרס גדול יותר. במצב "קרב מסוכן" התגמול מוכפל.
         const baseReward =
         Math.floor(
             Math.random() * (maxReward - minReward + 1)
         ) + minReward;
         const reward =
         Math.floor(
-            baseReward * enemy.scaledDifficulty
+            baseReward * enemy.scaledDifficulty * rewardMultiplier
         );
         player.money += reward;
-        // זהב על כל ניצחון - 1 עד 15, מושפע מקושי האויב
+        // זהב על כל ניצחון - 1 עד 15, מושפע מקושי האויב (ומוכפל במצב מסוכן)
         const goldReward =
-        Math.min(
-            15,
-            Math.max(
-                1,
-                Math.round(
-                    Math.random() * 15 * enemy.scaledDifficulty
-                )
+        Math.max(
+            1,
+            Math.round(
+                Math.min(15, Math.random() * 15 * enemy.scaledDifficulty) * rewardMultiplier
             )
         );
         if(typeof player.gold !== "number"){
@@ -219,12 +268,21 @@ function startBattle(enemyIndex){
         addXP(
             Math.floor(xpReward * enemy.difficulty)
         );
+        // גם בניצחון יש סיכוי קטן לפציעה קלה - אף קרב לא "חינם" לגמרי
+        let winDamage = 0;
+        if(Math.random() < 0.25){
+            const rawWinDamage = Math.floor(Math.random() * 6) + 3; // 3-8
+            winDamage = Math.max(1, rawWinDamage - Math.floor((player.defense || 0) * 0.5));
+            player.health -= winDamage;
+            if(player.health < 0) player.health = 0;
+        }
         showMessage(
             "⚔️ ניצחת את " +
             enemy.name +
             " (רמת קרב " + targetLevel + ") וקיבלת ₪" +
             reward +
             " ו-" + goldReward + " 🪎" +
+            (isDangerous ? " | ☠️ בונוס קרב מסוכן" : "") +
             (
                 blackMoneyBonus > 0
                 ?
@@ -236,6 +294,13 @@ function startBattle(enemyIndex){
                 diamondBonus > 0
                 ?
                 " | 🎖️ ניצחון מס' " + player.totalWins + " - זכית ביהלום! 💎"
+                :
+                ""
+            ) +
+            (
+                winDamage > 0
+                ?
+                " | 🩸 נפצעת קלות גם בניצחון -" + winDamage + " חיים"
                 :
                 ""
             )
@@ -399,5 +464,5 @@ function startBattle(enemyIndex){
     }
 }
 console.log(
-    "WARDEAL COMBAT v2.0 READY"
+    "WARDEAL COMBAT v2.8 READY"
 );

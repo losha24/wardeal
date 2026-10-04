@@ -7,6 +7,7 @@ let gameRunning = false;
 let gameInterval = null;
 let saveInterval = null;
 let uiUpdateCounter = 0;
+let cashRiskCheckCounter = 0;
 // ==========================================
 // הפעלת מנוע
 // ==========================================
@@ -88,6 +89,19 @@ function gameTick() {
     recoverPlayerEnergy();
     recoverPlayerHealth();
     updatePassiveIncome();
+    // תקרת מזומן - נבדק בכל טיק כדי לתפוס עודף מהר
+    if(typeof enforceCashOverflow === "function"){
+        enforceCashOverflow();
+    }
+    // סיכון באחזקת מזומן - נבדק פעם בדקה בלבד (60 טיקים),
+    // ורק בזמן משחק פעיל (לא נבדק על זמן אופליין)
+    cashRiskCheckCounter++;
+    if(cashRiskCheckCounter >= 60){
+        cashRiskCheckCounter = 0;
+        if(typeof checkCashRisk === "function"){
+            checkCashRisk();
+        }
+    }
     uiUpdateCounter++;
     // עדכון UI כל 3 שניות
     if(
@@ -380,5 +394,5 @@ function onGameLoaded(){
     }
 }
 console.log(
-    "WARDEAL CORE v2.0 READY"
+    "WARDEAL CORE v2.7 READY"
 );

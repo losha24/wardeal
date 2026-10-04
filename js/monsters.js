@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v2.4
+   WARDEAL v2.8
    קרבות מיוחדים - מפלצות
    10 מפלצות, קושי גדל לפי רמה, ללא קירור -
    רק עלות אנרגיה. פרסים: כסף שחור + יהלומים,
@@ -42,6 +42,27 @@ const MONSTERS = [
 // ==========================================
 // רשימת מפלצות מותאמת לרמת השחקן (נעילה/קושי)
 // ==========================================
+// מפלצות קשוחות יותר מקרב רגיל, דומה לבוסים (ראה combat.js/boss.js)
+const MONSTER_WIN_FLOOR = 0.10;
+const MONSTER_WIN_CEILING = 0.82;
+// ==========================================
+// סיכוי ניצחון משוער מול מפלצת - לתצוגה מראש בממשק
+// ==========================================
+function getMonsterWinPercent(monster){
+    if(!player || !monster) return 0;
+    const level = Math.max(1, Number(player.level) || 1);
+    const unlock = Math.max(1, monster.minLevel || 1);
+    if(level < unlock) return 0;
+    const attackPower =
+    typeof getAttackPower === "function" ? getAttackPower() : (player.power || 0);
+    const scaledDifficulty =
+    monster.difficulty * (1 + Math.max(0, level - unlock) * 0.035);
+    const monsterPower =
+    Math.max(1, (10 + level * 6) * Math.max(0.5, scaledDifficulty));
+    const ratio = attackPower / monsterPower;
+    const dangerous = typeof dangerousBattleMode !== "undefined" && dangerousBattleMode;
+    return Math.round(getWinChance(ratio, MONSTER_WIN_FLOOR, MONSTER_WIN_CEILING, dangerous) * 100);
+}
 function getMonsterList(){
     if(!player) return [];
     const level = Math.max(1, Number(player.level) || 1);
@@ -49,7 +70,8 @@ function getMonsterList(){
         const unlock = Math.max(1, monster.minLevel || 1);
         const scaledDifficulty = monster.difficulty * (1 + Math.max(0, level - unlock) * 0.035);
         const rewardRange = getMonsterRewardRange(monster);
-        return { ...monster, index, scaledDifficulty, locked: level < unlock, rewardRange };
+        const winPercent = level < unlock ? 0 : getMonsterWinPercent(monster);
+        return { ...monster, index, scaledDifficulty, locked: level < unlock, rewardRange, winPercent };
     });
 }
 // ==========================================
@@ -103,20 +125,33 @@ function attackMonster(monsterIndex){
     : (player.power || 0);
     const scaledDifficulty =
     monster.difficulty * (1 + Math.max(0, level - unlock) * 0.035);
-    const monsterPowerBase =
-    (10 + level * 6) * Math.max(0.5, scaledDifficulty);
-    // שונות מוטה 60/40 לטובת ניצחון כשהכוח תואם בערך
-    const variance =
-    0.76 + Math.random() * 0.4;
     const monsterPower =
-    Math.max(1, monsterPowerBase * variance);
-    if(attackPower >= monsterPower){
+    Math.max(1, (10 + level * 6) * Math.max(0.5, scaledDifficulty));
+    const isDangerous =
+    typeof dangerousBattleMode !== "undefined" && dangerousBattleMode;
+    // עקומת הסתברות חלקה (כמו בקרב רגיל/בוס) - גם בכוח מקסימלי
+    // יש סיכוי קטן להפסיד, וגם בכוח מינימלי יש סיכוי קטן לנצח.
+    // מפלצות קשוחות יותר מקרב רגיל, דומה לבוסים.
+    const monsterPowerRatio = attackPower / monsterPower;
+    const monsterWinChance =
+    typeof getWinChance === "function"
+    ?
+    getWinChance(monsterPowerRatio, MONSTER_WIN_FLOOR, MONSTER_WIN_CEILING, isDangerous)
+    :
+    (attackPower >= monsterPower ? 0.8 : 0.1);
+    const rewardMultiplier =
+    isDangerous && typeof DANGEROUS_REWARD_MULTIPLIER !== "undefined"
+    ?
+    DANGEROUS_REWARD_MULTIPLIER
+    :
+    1;
+    if(Math.random() < monsterWinChance){
         const rewardRange = getMonsterRewardRange(monster);
         const blackMoney =
-        Math.floor(Math.random() * (rewardRange.blackMoneyMax - rewardRange.blackMoneyMin + 1)) + rewardRange.blackMoneyMin;
+        Math.round((Math.floor(Math.random() * (rewardRange.blackMoneyMax - rewardRange.blackMoneyMin + 1)) + rewardRange.blackMoneyMin) * rewardMultiplier);
         const diamonds =
         rewardRange.diamondsMax > 0
-        ? Math.floor(Math.random() * (rewardRange.diamondsMax - rewardRange.diamondsMin + 1)) + rewardRange.diamondsMin
+        ? Math.round((Math.floor(Math.random() * (rewardRange.diamondsMax - rewardRange.diamondsMin + 1)) + rewardRange.diamondsMin) * rewardMultiplier)
         : 0;
         if(typeof player.blackMoney !== "number"){
             player.blackMoney = 0;
@@ -152,11 +187,23 @@ function attackMonster(monsterIndex){
             lootMessage =
             " | 🎁 שלל נדיר! קיבלת " + monster.loot.name + " (+" + monster.loot.statValue + ")";
         }
+        // גם בניצחון יש סיכוי קטן לפציעה - אף קרב לא "חינם" לגמרי
+        let winDamage = 0;
+        if(Math.random() < 0.25){
+            const rawWinDamage =
+            Math.floor((player.maxHealth || 100) * (0.04 + Math.random() * 0.04));
+            winDamage =
+            Math.max(1, rawWinDamage - Math.floor((player.defense || 0) * 0.4));
+            player.health -= winDamage;
+            if(player.health < 0) player.health = 0;
+        }
         showMessage(
             "🏆 ניצחת את " + monster.name + "! " +
             "+" + blackMoney + " 🖤" +
             (diamonds > 0 ? " +" + diamonds + " 💎" : "") +
-            lootMessage
+            (isDangerous ? " | ☠️ בונוס קרב מסוכן" : "") +
+            lootMessage +
+            (winDamage > 0 ? " | 🩸 נפצעת גם בניצחון -" + winDamage + " חיים" : "")
         );
         if(typeof dailyAddProgress === "function"){
             dailyAddProgress("battlesWon", 1);
@@ -215,6 +262,7 @@ function renderMonsterList(content){
         <button class="smallButton quickActionBtn menuButton" onclick="setBattleTab('boss')">🏆 בוסים</button>
         <button class="smallButton quickActionBtn menuButton active" onclick="setBattleTab('monsters')">🐉 מיוחדים</button>
     </div>
+    ${typeof getDangerousModeToggleHtml === "function" ? getDangerousModeToggleHtml() : ""}
     <div class="battleGrid">`;
     getMonsterList().forEach(monster=>{
         const monsterPowerBase =
@@ -229,6 +277,7 @@ function renderMonsterList(content){
             <div class="battleMeta">💪 כוח <b>${monsterPowerBase}</b></div>
             <div class="battleMeta">🔓 ${monster.locked ? `נפתח ברמה ${monster.minLevel}` : `רמה ${monster.minLevel}+`}</div>
             <div class="battleMeta">🖤 ${monster.rewardRange.blackMoneyMin}-${monster.rewardRange.blackMoneyMax}${monster.rewardRange.diamondsMax > 0 ? " · 💎 " + monster.rewardRange.diamondsMin + "-" + monster.rewardRange.diamondsMax : ""}</div>
+            ${!monster.locked ? `<div class="battleMeta">🎲 סיכוי ניצחון משוער: <b>${monster.winPercent}%</b></div>` : ""}
             <button
             class="battleFightBtn"
             ${disabled ? "disabled" : ""}

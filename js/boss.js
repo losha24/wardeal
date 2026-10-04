@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v2.4
+   WARDEAL v2.8
    מערכת בוסים
    כוח והגנה של הבוס נגזרים מרמת השחקן.
    הגנת השחקן מפחיתה נזק בהפסד (לא משפיעה
@@ -205,6 +205,21 @@ function getBossRewardRange(boss){
         diamondsMax: Math.max(boss.rewardDiamondsMax, Math.round(boss.rewardDiamondsMax * multiplier))
     };
 }
+// בוסים קשוחים יותר מקרב רגיל (ceiling/floor נמוכים יותר - ראה combat.js)
+const BOSS_WIN_FLOOR = 0.08;
+const BOSS_WIN_CEILING = 0.80;
+// ==========================================
+// סיכוי ניצחון משוער מול בוס - לתצוגה מראש בממשק
+// ==========================================
+function getBossWinPercent(boss){
+    if(!player || !boss) return 0;
+    const attackPower =
+    typeof getAttackPower === "function" ? getAttackPower() : (player.power || 0);
+    const threshold = getBossThreshold(boss);
+    const ratio = attackPower / Math.max(1, threshold);
+    const dangerous = typeof dangerousBattleMode !== "undefined" && dangerousBattleMode;
+    return Math.round(getWinChance(ratio, BOSS_WIN_FLOOR, BOSS_WIN_CEILING, dangerous) * 100);
+}
 function getBossThreshold(boss){
     if(!player || !boss){
         return 0;
@@ -308,21 +323,36 @@ function attackBoss(bossId){
     (player.power || 0);
     const threshold =
     getBossThreshold(boss);
-    // שונות אקראית מוטה 60/40 לטובת ניצחון כשהכוח תואם, כמו בקרב רגיל
-    const variance =
-    0.88 + Math.random() * 0.2;
-    const effectiveThreshold =
-    threshold * variance;
-    if(attackPower >= effectiveThreshold){
+    const isDangerous =
+    typeof dangerousBattleMode !== "undefined" && dangerousBattleMode;
+    // עקומת הסתברות חלקה (כמו בקרב רגיל) - גם בכוח מקסימלי
+    // יש סיכוי קטן להפסיד מול בוס, וגם בכוח מינימלי יש
+    // סיכוי קטן לנצח. בוסים קשוחים יותר מקרב רגיל (ceiling/floor נמוכים יותר)
+    const bossPowerRatio = attackPower / Math.max(1, threshold);
+    const bossWinChance =
+    typeof getWinChance === "function"
+    ?
+    getWinChance(bossPowerRatio, BOSS_WIN_FLOOR, BOSS_WIN_CEILING, isDangerous)
+    :
+    (attackPower >= threshold ? 0.8 : 0.08);
+    const rewardMultiplier =
+    isDangerous && typeof DANGEROUS_REWARD_MULTIPLIER !== "undefined"
+    ?
+    DANGEROUS_REWARD_MULTIPLIER
+    :
+    1;
+    if(Math.random() < bossWinChance){
         const rewardRange = getBossRewardRange(boss);
         const blackMoney =
+        Math.round((
         Math.floor(
             Math.random() * (rewardRange.blackMoneyMax - rewardRange.blackMoneyMin + 1)
-        ) + rewardRange.blackMoneyMin;
+        ) + rewardRange.blackMoneyMin) * rewardMultiplier);
         const diamonds =
+        Math.round((
         Math.floor(
             Math.random() * (rewardRange.diamondsMax - rewardRange.diamondsMin + 1)
-        ) + rewardRange.diamondsMin;
+        ) + rewardRange.diamondsMin) * rewardMultiplier);
         if(typeof player.blackMoney !== "number"){
             player.blackMoney = 0;
         }
@@ -358,10 +388,22 @@ function attackBoss(bossId){
             " | 🎁 שלל נדיר! קיבלת " + boss.loot.name +
             " (+" + boss.loot.statValue + ")";
         }
+        // גם בניצחון יש סיכוי שהבוס יספיק להכות - אף קרב בוס לא "חינם" לגמרי
+        let winDamage = 0;
+        if(Math.random() < 0.3){
+            const rawWinDamage =
+            Math.floor((player.maxHealth || 100) * (0.05 + Math.random() * 0.05));
+            winDamage =
+            Math.max(1, rawWinDamage - Math.floor((player.defense || 0) * 0.5));
+            player.health -= winDamage;
+            if(player.health < 0) player.health = 0;
+        }
         showMessage(
             "🏆 ניצחת את " + boss.name + "! " +
             "+" + blackMoney + " 🖤 +" + diamonds + " 💎" +
-            lootMessage
+            (isDangerous ? " | ☠️ בונוס קרב מסוכן" : "") +
+            lootMessage +
+            (winDamage > 0 ? " | 🩸 נפצעת גם בניצחון -" + winDamage + " חיים" : "")
         );
         if(typeof dailyAddProgress === "function"){
             dailyAddProgress("bossesDefeated", 1);
@@ -455,5 +497,5 @@ function attackBoss(bossId){
     return true;
 }
 console.log(
-    "WARDEAL BOSS v2.2 READY"
+    "WARDEAL BOSS v2.8 READY"
 );

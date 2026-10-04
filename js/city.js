@@ -849,14 +849,23 @@ function renderActions(content){
     const rSupply = getOperationRewardInfo("supply");
     const rEscape = getOperationRewardInfo("escape");
     const opReward = (r) => r.moneyMax > r.moneyMin ? "₪" + r.moneyMin.toLocaleString() + "-" + r.moneyMax.toLocaleString() : "₪" + r.moneyMin.toLocaleString();
+    const cashRiskThreshold = typeof getCashRiskThreshold === "function" ? getCashRiskThreshold() : 2000000;
+    const cashOverflowThreshold = typeof getCashOverflowThreshold === "function" ? getCashOverflowThreshold() : 15000000;
+    const launderMaxAmount = typeof getLaunderMaxAmount === "function" ? getLaunderMaxAmount() : cashOverflowThreshold;
+    const launderRate = typeof getLaunderRate === "function" ? getLaunderRate() : 500000;
+    const launderStatus = typeof getLaunderStatus === "function" ? getLaunderStatus() : {ready:true,text:""};
+    const launderMinAmount = typeof getLaunderMinAmount === "function" ? getLaunderMinAmount() : 1;
+    const overCashRisk = money > cashRiskThreshold;
     content.innerHTML = `
         <div class="contentCard specialActionsPanel">
             <h3>🎯 פעולות נוספות — ${sideName}</h3>
             <p class="actionsIntro">פעולות ומבצעים נגד ${targetName}, בהתאם לצד שבחרת.</p>
+            ${overCashRisk ? `<p class="actionsIntro" style="color:#f87171">🚨 אתה מסתובב עם יותר מ-₪${cashRiskThreshold.toLocaleString()} מזומן - יש סיכון לפשיטה שתגזול חלק מהעודף! הלבן או השקע כדי להימנע.</p>` : ""}
             <div class="specialActionsGrid operationGrid">
                 <div class="specialActionCard"><div class="specialActionIcon">🖤</div><div class="specialActionTitle">מבצע גבייה</div><div class="specialActionText">גביית שוחד תמורת ${BRIBE_ENERGY_COST} ⚡. רמה ${player.level || 1}: ₪${getBribeRewardRange().moneyMin.toLocaleString()}–₪${getBribeRewardRange().moneyMax.toLocaleString()} + ${getBribeRewardRange().blackMoneyMin}–${getBribeRewardRange().blackMoneyMax} 🖤. נותרו ${bribeStatus.remaining}/${BRIBE_MAX_USES} שימושים.</div><button class="upgradeBtn specialActionBtn" ${(energy < BRIBE_ENERGY_COST || bribeStatus.remaining <= 0) ? "disabled" : ""} onclick="collectBribe()">🖤 גבה</button></div>
                 <div class="specialActionCard"><div class="specialActionIcon">💎</div><div class="specialActionTitle">המרת יהלומים</div><div class="specialActionText">המר כסף רגיל ליהלומים. מחיר ליהלום בהמרה הבאה: ₪${diamondConvertRate.toLocaleString()} (המחיר עולה 5%-20% אקראית בכל המרה). <b>מקסימום להמרה אחת: ₪${diamondConvertMaxAmount.toLocaleString()} (עד ${DIAMOND_CONVERT_MAX_PER_USE} 💎)</b></div><input type="number" id="diamondConvertAmountInput" min="${diamondConvertMinAmount}" max="${diamondConvertMaxAmount}" step="1000" value="${diamondConvertMinAmount}" class="convertInput"><div class="specialActionStatus">עד ${diamondConvertStatus.remaining} המרות מתוך ${DIAMOND_CONVERT_MAX_USES} בחלון הנוכחי</div><button class="upgradeBtn specialActionBtn" ${(diamondConvertStatus.remaining <= 0 || money < diamondConvertMinAmount) ? "disabled" : ""} onclick="handleDiamondConvertClick()">💎 המר</button></div>
                 <div class="specialActionCard"><div class="specialActionIcon">💱</div><div class="specialActionTitle">מבצע המרה</div><div class="specialActionText">המר כסף לכסף שחור. כל ₪${CONVERT_RATE.toLocaleString()} = 🖤1 (במקרה של הצלחה). <b>מקסימום לרמה שלך: ₪${convertMaxAmount.toLocaleString()}</b></div><input type="number" id="convertAmountInput" min="${CONVERT_MIN_AMOUNT}" max="${convertMaxAmount}" step="100" value="${Math.min(CONVERT_MIN_AMOUNT, Math.max(0, Math.floor(money)))}" class="convertInput"><div class="specialActionStatus">עד ${convertStatus.remaining} המרות מתוך ${CONVERT_MAX_USES} בחלון הנוכחי</div><button class="upgradeBtn specialActionBtn" ${(convertStatus.remaining <= 0 || money < CONVERT_MIN_AMOUNT) ? "disabled" : ""} onclick="handleConvertClick()">💱 המר</button></div>
+                <div class="specialActionCard"><div class="specialActionIcon">🧼</div><div class="specialActionTitle">הלבנת הון</div><div class="specialActionText">הלבן מזומן "חם" לזהב נקי תמורת עמלה של ${Math.round(LAUNDER_COMMISSION*100)}%. כל ₪${launderRate.toLocaleString()} (אחרי עמלה) = 🪎1. <b>מינימום: ₪${launderMinAmount.toLocaleString()} | מקסימום: ₪${launderMaxAmount.toLocaleString()}</b>. הדרך הכי טובה להימנע מסיכון אחזקת מזומן (מעל ₪${cashRiskThreshold.toLocaleString()}).</div><input type="number" id="launderAmountInput" min="${launderMinAmount}" max="${launderMaxAmount}" step="10000" value="${Math.min(launderMaxAmount, Math.max(launderMinAmount, Math.floor(money)))}" class="convertInput"><div class="specialActionStatus">${launderStatus.ready ? "✅ זמין" : "⏳ זמין שוב בעוד " + launderStatus.text}</div><button class="upgradeBtn specialActionBtn" ${(!launderStatus.ready || money < launderMinAmount) ? "disabled" : ""} onclick="handleLaunderClick()">🧼 הלבן</button></div>
                 <div class="specialActionCard"><div class="specialActionIcon">🕵️</div><div class="specialActionTitle">מבצע מודיעין נגד ${targetName}</div><div class="specialActionText">איסוף מידע על ${targetName}. תגמול: ${opReward(rIntel)} + ${rIntel.xp} XP.</div><div class="specialActionStatus">${intel.ready ? "✅ זמין" : "⏳ " + intel.text}</div><button class="upgradeBtn specialActionBtn" ${intel.ready ? "" : "disabled"} onclick="runSpecialOperation('intel')">🕵️ הפעל</button></div>
                 <div class="specialActionCard"><div class="specialActionIcon">💰</div><div class="specialActionTitle">פשיטה על ${targetName}</div><div class="specialActionText">מבצע התקפי מסוכן. תגמול: ${opReward(rRaid)} + ${rRaid.xp} XP.</div><div class="specialActionStatus">${raid.ready ? "✅ זמין" : "⏳ " + raid.text}</div><button class="upgradeBtn specialActionBtn" ${raid.ready ? "" : "disabled"} onclick="runSpecialOperation('raid')">💰 הפעל</button></div>
                 <div class="specialActionCard"><div class="specialActionIcon">📦</div><div class="specialActionTitle">אספקת ${sideName}</div><div class="specialActionText">קבלת אספקה. תגמול: ${opReward(rBonus)} + ${rBonus.energy} ⚡.</div><div class="specialActionStatus">${bonus.ready ? "✅ זמין" : "⏳ " + bonus.text}</div><button class="upgradeBtn specialActionBtn" ${bonus.ready ? "" : "disabled"} onclick="runSpecialOperation('bonus')">📦 הפעל</button></div>
@@ -1067,6 +1076,150 @@ function showMessageSafeCity(message){
         showMessage(message);
     }
 }
+// ==========================================
+// ניהול מזומן - עודף, סיכון, והלבנת הון
+// כל הסכומים גדלים לפי אותו מכפיל תגמולים משותף
+// (getRewardLevelMultiplier ב-player.js) כמו שאר
+// הכלכלה, כדי שיישארו רלוונטיים גם כשהתגמולים
+// גדלים אקראית (1%-30% לרמה)
+// ==========================================
+const CASH_RISK_THRESHOLD_BASE = 2000000; // מעל זה - סיכון לפשיטה/חקירה
+const CASH_OVERFLOW_THRESHOLD_BASE = 15000000; // מעל זה - המרה אוטומטית ליהלומים
+const CASH_OVERFLOW_DIAMOND_RATE_BASE = 3000000; // תעריף "מס" יקר על עודף
+function getRewardMultiplierSafe(){
+    return typeof getRewardLevelMultiplier === "function" ? getRewardLevelMultiplier() : 1;
+}
+function getCashRiskThreshold(){
+    return Math.round(CASH_RISK_THRESHOLD_BASE * getRewardMultiplierSafe());
+}
+function getCashOverflowThreshold(){
+    return Math.round(CASH_OVERFLOW_THRESHOLD_BASE * getRewardMultiplierSafe());
+}
+function getCashOverflowDiamondRate(){
+    return Math.round(CASH_OVERFLOW_DIAMOND_RATE_BASE * getRewardMultiplierSafe());
+}
+// ==========================================
+// סיכון באחזקת מזומן - ככל שמחזיקים יותר מעל הסף
+// כך גדל הסיכוי לפשיטה שגוזלת חלק מהעודף
+// נבדק מתוך gameTick כל דקה (לא בכל שנייה) ורק
+// בזמן משחק פעיל - לא על זמן אופליין
+// ==========================================
+function checkCashRisk(){
+    if(!player || typeof player.money !== "number") return;
+    const threshold = getCashRiskThreshold();
+    if(player.money <= threshold) return;
+    const excess = player.money - threshold;
+    const severityRatio = excess / threshold;
+    const chance = Math.min(0.30, 0.05 + severityRatio * 0.08);
+    if(Math.random() < chance){
+        const stealPct = 0.05 + Math.random() * 0.15;
+        const stolen = Math.max(1, Math.floor(excess * stealPct));
+        player.money -= stolen;
+        showMessageSafeCity(
+            "🚨 " + (isPoliceSide() ? "חקירה פנימית" : "פשיטת משטרה") +
+            " גילתה שאתה מסתובב עם יותר מדי מזומן - נגנבו ₪" +
+            stolen.toLocaleString() +
+            "! כדאי להלבין או להשקיע את הכסף."
+        );
+        if(typeof saveGame === "function") saveGame();
+        if(typeof updateUI === "function") updateUI();
+    }
+}
+// ==========================================
+// תקרת מזומן - מעבר לסכום הזה, העודף מומר
+// אוטומטית ליהלומים (תעריף יקר - "מס" על צבירה
+// מוגזמת, לא דרך משתלמת לקנות יהלומים)
+// ==========================================
+function enforceCashOverflow(){
+    if(!player || typeof player.money !== "number") return;
+    const ceiling = getCashOverflowThreshold();
+    if(player.money <= ceiling) return;
+    const excess = player.money - ceiling;
+    const rate = getCashOverflowDiamondRate();
+    const diamondsGained = Math.floor(excess / rate);
+    if(diamondsGained <= 0) return;
+    if(typeof player.diamonds !== "number") player.diamonds = 0;
+    player.diamonds += diamondsGained;
+    player.money = ceiling + (excess % rate);
+    showMessageSafeCity(
+        "💎 יותר מדי מזומן בקופה - עודף של ₪" +
+        (diamondsGained * rate).toLocaleString() +
+        " הומר אוטומטית ל-" + diamondsGained + " 💎"
+    );
+    if(typeof saveGame === "function") saveGame();
+    if(typeof updateUI === "function") updateUI();
+}
+// ==========================================
+// הלבנת הון - פעולה יזומה של השחקן: ממיר מזומן
+// "חם" לזהב "נקי" תמורת עמלה. דרך הכי יעילה
+// (ויזומה) להימנע מסיכון אחזקת המזומן למעלה
+// ==========================================
+const LAUNDER_RATE_BASE = 500000; // ₪500,000 (לפני עמלה) = 1 🪎 ברמה 1
+const LAUNDER_COMMISSION = 0.15; // עמלה של 15%
+const LAUNDER_WINDOW = 2 * 60 * 60 * 1000; // קירור של 2 שעות
+function getLaunderRate(){
+    return Math.max(1, Math.round(LAUNDER_RATE_BASE * getRewardMultiplierSafe()));
+}
+// ==========================================
+// הסכום המינימלי שבאמת מניב לפחות 🪎1 אחרי העמלה
+// (ולא קבוע שרירותי - כדי שלא "ייבלע" בלי התרעה ברורה)
+// ==========================================
+function getLaunderMinAmount(){
+    return Math.ceil(getLaunderRate() / (1 - LAUNDER_COMMISSION));
+}
+function getLaunderMaxAmount(){
+    return getCashOverflowThreshold();
+}
+function getLaunderStatus(){
+    if(!player) return {ready:true, text:""};
+    const last = player.launderLastUse || 0;
+    const remain = LAUNDER_WINDOW - (Date.now() - last);
+    if(remain <= 0) return {ready:true, text:""};
+    const minutes = Math.max(1, Math.ceil(remain / 60000));
+    return {ready:false, text: minutes + " דק'"};
+}
+function launderMoney(amount){
+    if(!player) return false;
+    amount = Math.floor(Number(amount));
+    const maxAmount = getLaunderMaxAmount();
+    const minAmount = getLaunderMinAmount();
+    if(!amount || isNaN(amount) || amount < minAmount){
+        showMessageSafeCity("🧼 סכום מינימלי להלבנה (כדי לקבל לפחות 🪎1): ₪" + minAmount.toLocaleString());
+        return false;
+    }
+    if(amount > maxAmount){
+        showMessageSafeCity("🧼 סכום מקסימלי להלבנה: ₪" + maxAmount.toLocaleString());
+        return false;
+    }
+    const status = getLaunderStatus();
+    if(!status.ready){
+        showMessageSafeCity("⏳ הלבנת הון תהיה זמינה שוב בעוד " + status.text);
+        return false;
+    }
+    if((Number(player.money) || 0) < amount){
+        showMessageSafeCity("💰 אין מספיק כסף להלבין");
+        return false;
+    }
+    const rate = getLaunderRate();
+    const goldGained = Math.floor((amount * (1 - LAUNDER_COMMISSION)) / rate);
+    if(goldGained <= 0){
+        showMessageSafeCity("🧼 הסכום קטן מדי בשביל להניב זהב - נסה סכום גבוה יותר");
+        return false;
+    }
+    player.money -= amount;
+    if(typeof player.gold !== "number") player.gold = 0;
+    player.gold += goldGained;
+    player.launderLastUse = Date.now();
+    if(typeof dailyAddProgress === "function") dailyAddProgress("specialActions", 1);
+    showMessageSafeCity(
+        "🧼 הלבנת ₪" + amount.toLocaleString() + " וקיבלת " + goldGained +
+        " 🪎 (אחרי עמלה של " + Math.round(LAUNDER_COMMISSION * 100) + "%)"
+    );
+    if(typeof saveGame === "function") saveGame();
+    if(typeof updateUI === "function") updateUI();
+    if(typeof currentPage !== "undefined" && currentPage === "actions") renderActions(document.getElementById("gameContent"));
+    return true;
+}
 console.log(
-    "WARDEAL CITY v2.5 READY"
+    "WARDEAL CITY v2.7 READY"
 );

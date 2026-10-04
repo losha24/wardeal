@@ -1,5 +1,5 @@
 /* ==========================================
-   WARDEAL v2.4
+   WARDEAL v2.7
    Player System
    Stable Save Compatibility
 ========================================== */
@@ -47,6 +47,7 @@ const DEFAULT_PLAYER = {
     diamondConvertCount: 0,
     diamondConvertPrice: 0,
     rewardGrowthMultiplier: 1,
+    launderLastUse: 0,
     hospitalUntil: 0,
     bossCooldowns: {},
     bossLoot: [],
@@ -448,7 +449,7 @@ function rollRewardGrowthForLevelUp(){
     player.rewardGrowthMultiplier * (1 + growth);
 }
 console.log(
-    "WARDEAL PLAYER v2.4 READY"
+    "WARDEAL PLAYER v2.7 READY"
 );
 // ==========================================
 // בית חולים - נעילה כשגומרים חיים

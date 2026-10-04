@@ -1,8 +1,8 @@
 /* ==========================================
-   WARDEAL v2.6
+   WARDEAL v2.8
    Game Constants
 ========================================== */
-const GAME_VERSION = "2.6";
+const GAME_VERSION = "2.8";
 // ==========================================
 // גדילת תגמולים לפי רמת שחקן
 // כל התגמולים (עבודות, משימות, פעולות מיוחדות,
@@ -41,5 +41,5 @@ const BATTLE_XP_REWARD = 25;
 const WORK_ENERGY_COST = 10;
 const BATTLE_ENERGY_COST = 10;
 console.log(
-   "WARDEAL CONSTANTS v2.6 READY"
+   "WARDEAL CONSTANTS v2.8 READY"
 );

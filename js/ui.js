@@ -787,6 +787,7 @@ function renderBattle(content){
             <button class="smallButton quickActionBtn menuButton" onclick="setBattleTab('boss')">🏆 בוסים</button>
             <button class="smallButton quickActionBtn menuButton" onclick="setBattleTab('monsters')">🐉 מיוחדים</button>
         </div>
+        ${getDangerousModeToggleHtml()}
         <div class="battleInfo">
             <div>💪 כוח התקפה: <b>${attackPower}</b><span class="battleInfoSub">${unitsBonus} יחידות · ${speedBonus} מהירות</span></div>
             <div>🛡️ הגנה: <b>${player.defense || 0}</b></div>
@@ -801,12 +802,26 @@ function renderBattle(content){
                 <div class="battleMeta">🎯 קושי <b>${enemy.scaledDifficulty.toFixed(2)}x</b></div>
                 <div class="battleMeta">🔓 ${enemy.locked ? `נפתח ברמה ${enemy.minLevel}` : `רמה ${enemy.minLevel}+`}</div>
                 <div class="battleMeta">⚡ דרושות ${typeof getBattleEnergyCost === "function" ? getBattleEnergyCost(enemy) : 10} אנרגיה</div>
+                ${!enemy.locked ? `<div class="battleMeta">🎲 סיכוי ניצחון משוער: <b>${typeof getBattleWinPercent === "function" ? getBattleWinPercent(enemy) : "?"}%</b></div>` : ""}
                 <button class="battleFightBtn" ${enemy.locked || player.energy < (typeof getBattleEnergyCost === "function" ? getBattleEnergyCost(enemy) : 10) ? "disabled" : ""} onclick="startBattle(${enemy.index})">
                     ${enemy.locked ? "🔒 נעול" : `⚔️ תקוף · ⚡ ${typeof getBattleEnergyCost === "function" ? getBattleEnergyCost(enemy) : 10}`}
                 </button>
             </div>
         `).join("")}
         </div>
+    </div>
+    `;
+}
+// ==========================================
+// שורת מצב "קרב מסוכן" - משותפת לשלושת הטאבים
+// ==========================================
+function getDangerousModeToggleHtml(){
+    const on = typeof dangerousBattleMode !== "undefined" && dangerousBattleMode;
+    return `
+    <div class="dangerousModeRow" style="margin:6px 0;padding:8px;border-radius:10px;text-align:center;background:${on ? "#7f1d1d" : "#1e293b"};border:1px solid ${on ? "#ef4444" : "#334155"}">
+        <button class="smallButton menuButton ${on ? "active" : ""}" onclick="toggleDangerousMode()">
+            ${on ? "☠️ קרב מסוכן פעיל - לחץ לכיבוי" : "🛡️ הפעל מצב \"קרב מסוכן\" (סיכוי נמוך יותר, תגמול פי " + (typeof DANGEROUS_REWARD_MULTIPLIER !== "undefined" ? DANGEROUS_REWARD_MULTIPLIER : 1.75) + ")"}
+        </button>
     </div>
     `;
 }
@@ -836,6 +851,7 @@ function renderBossList(content){
         <button class="smallButton quickActionBtn menuButton active" onclick="setBattleTab('boss')">🏆 בוסים</button>
         <button class="smallButton quickActionBtn menuButton" onclick="setBattleTab('monsters')">🐉 מיוחדים</button>
     </div>
+    ${getDangerousModeToggleHtml()}
     `;
     if(typeof BOSSES === "undefined"){
         html += `</div>`;
@@ -893,6 +909,7 @@ function renderBossList(content){
                 💪 כוח ${bossStats.power} | 🛡️ הגנה ${bossStats.defense}
                 <br>🖤 ${bossRewardRange.blackMoneyMin}-${bossRewardRange.blackMoneyMax} | 💎 ${bossRewardRange.diamondsMin}-${bossRewardRange.diamondsMax}
                 ${hasLoot ? " | ✅ שלל כבר התקבל" : " | 🎁 " + Math.round(boss.lootChance*100) + "% לשלל בלעדי"}
+                ${unlocked ? `<br>🎲 סיכוי ניצחון משוער: <b>${typeof getBossWinPercent === "function" ? getBossWinPercent(boss) : "?"}%</b>` : ""}
             </div>
             <button
             class="upgradeBtn"
@@ -1146,11 +1163,27 @@ function handleDiamondConvertClick(){
     }
 }
 // ==========================================
+// עטיפה: קריאת סכום ההלבנה משדה הקלט
+// ==========================================
+function handleLaunderClick(){
+    const input =
+    document.getElementById("launderAmountInput");
+    if(!input){
+        return;
+    }
+    const amount =
+    parseInt(input.value, 10);
+    if(typeof launderMoney === "function"){
+        launderMoney(amount);
+    }
+}
+// ==========================================
 // מסך עזרה
 // ==========================================
 const HELP_SECTIONS = [
     { icon:"🏰", title:"תחנה", text:"לוח התחנה - נכסים, עסקים, יחידות והכנסה. ניתן לפתח את התחנה עד רמה 50 ולקבל בונוסים ומתנה." },
-    { icon:"🎯", title:"פעולות", text:"מתנה כל 4 שעות, גביית שוחד (10 פעמים/4 שעות), המרת כסף ליהלומים (עד 10 פעמים/4 שעות), המרת כסף לכסף שחור בהימור (עד 5 פעמים/4 שעות), ו-8 מבצעים מיוחדים נוספים. כל התגמולים עולים ככל שהרמה עולה." },
+    { icon:"🎯", title:"פעולות", text:"מתנה כל 4 שעות, גביית שוחד (10 פעמים/4 שעות), המרת כסף ליהלומים (עד 10 פעמים/4 שעות), המרת כסף לכסף שחור בהימור (עד 5 פעמים/4 שעות), הלבנת הון לזהב (כל 2 שעות), ו-8 מבצעים מיוחדים נוספים. כל התגמולים עולים ככל שהרמה עולה." },
+    { icon:"💰", title:"ניהול מזומן", text:"אחזקת יותר מדי כסף בו-זמנית מסוכנת: מעבר לסף מסוים (גדל עם הרמה) יש סיכוי לפשיטה שגוזלת חלק מהעודף, ומעבר לתקרה גבוהה יותר העודף מומר אוטומטית ליהלומים ביחס יקר. הלבנת הון (בעמוד פעולות) ממירה מזומן לזהב בעמלה ועוזרת להימנע מהסיכון." },
     { icon:"💼", title:"עבודה", text:"עד 2 עבודות במקביל, כל אחת לוקחת זמן ונותנת כסף, XP, ולפעמים זהב/יהלומים/כסף שחור." },
     { icon:"👥", title:"צבא", text:"גיוס יחידות שמוסיפות כוח (וחלקן גם הגנה), ואפשר לשדרג אימון לכל סוג יחידה." },
     { icon:"🏠", title:"נכסים", text:"קנייה, שדרוג רמה (מעלה הכנסה), ושדרוג מיוחד בכסף שחור ויהלומים לבונוס קבוע (עד "+PROPERTY_SPECIAL_MAX_LEVEL+" רמות)." },
